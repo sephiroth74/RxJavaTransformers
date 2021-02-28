@@ -15,9 +15,9 @@ import java.util.concurrent.TimeUnit
  * @author Alessandro Crugnola on 06.01.21 - 13:29
  */
 
-
 /**
- * Subscribe to this [Completable] using an instance of the [AutoDisposableCompletableObserver]
+ * Subscribe to this [Completable] using an instance of the [AutoDisposableCompletableObserver].
+ * Source will be automatically disposed on complete or on error.
  */
 fun Completable.autoSubscribe(observer: AutoDisposableCompletableObserver): AutoDisposableCompletableObserver {
     return this.subscribeWith(observer)
@@ -38,7 +38,7 @@ fun Completable.autoSubscribe(): AutoDisposableCompletableObserver {
 }
 
 /**
- * alias for Completable.obsserveOn(AndroidSchedulers.mainThread())
+ * alias for <code>Completable.observeOn(AndroidSchedulers.mainThread())</code>
  */
 fun Completable.observeMain(): Completable {
     return observeOn(AndroidSchedulers.mainThread())

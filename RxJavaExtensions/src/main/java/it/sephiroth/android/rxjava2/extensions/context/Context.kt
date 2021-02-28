@@ -16,12 +16,20 @@ import it.sephiroth.android.rxjava2.extensions.observers.BroadcastReceiverObserv
  *
  * @author Alessandro Crugnola on 28.02.21 - 18:52
  */
+
+/**
+ * Register the current context to one or more intent actions.
+ * Once an action is received, the result [Observable] will trigger a new [Intent]
+ */
 fun Context.observeBroadcasts(vararg action: String): Observable<Intent> {
     val filter = IntentFilter()
     action.forEach { filter.addAction(it) }
     return observeBroadcasts(filter)
 }
 
+/**
+ * @see [observeBroadcasts]
+ */
 @Suppress("TooGenericExceptionCaught")
 fun Context.observeBroadcasts(intentFilter: IntentFilter): Observable<Intent> {
     val observable = Observable.create<Intent> { observer ->

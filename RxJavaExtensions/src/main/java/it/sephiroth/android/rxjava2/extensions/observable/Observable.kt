@@ -41,7 +41,8 @@ fun <T> Observable<List<T>>.firstInList(): Maybe<T> {
 
 
 /**
- * Subscribe to this [Single] using an instance of the [AutoDisposableObserver]
+ * Subscribe the source using an instance of the [AutoDisposableObserver].
+ * The source will be disposed when a complete or error event is received.
  */
 fun <T> Observable<T>.autoSubscribe(observer: AutoDisposableObserver<T>): AutoDisposableObserver<T> {
     return this.subscribeWith(observer)
@@ -62,21 +63,32 @@ fun <T> Observable<T>.observeMain(): Observable<T> {
 }
 
 /**
- * Retries an Observable when the predicate succeeds
+ * Retries the source observable when the predicate succeeds.
+ *
+ * @param predicate when the predicate returns true a new attempt will be made from the source observable
+ * @param maxRetry maximum number of attempts
+ * @param delayBeforeRetry minimum time (see [timeUnit]) before the next attempt
+ * @param timeUnit time unit for the [delayBeforeRetry] param
  */
-fun <T> Observable<T>.retry(predicate: (Throwable) -> Boolean, maxRetry: Int, delayBeforeRetry: Long, timeUnit: TimeUnit): Observable<T> =
-        retryWhen { observable ->
-            Observables.zip(
-                    observable.map { if (predicate(it)) it else throw it },
-                    Observable.interval(delayBeforeRetry, timeUnit)
-            ).map { if (it.second >= maxRetry) throw it.first }
-        }
+fun <T> Observable<T>.retry(
+    predicate: (Throwable) -> Boolean,
+    maxRetry: Int,
+    delayBeforeRetry: Long,
+    timeUnit: TimeUnit
+): Observable<T> =
+    retryWhen { observable ->
+        Observables.zip(
+            observable.map { if (predicate(it)) it else throw it },
+            Observable.interval(delayBeforeRetry, timeUnit)
+        ).map { if (it.second >= maxRetry) throw it.first }
+    }
 
 /**
  * Returns an Observable that emits the source observable every [time]. The source observable is triggered immediately
  * and all the consecutive calls after the time specified
  */
-fun <T> Observable<T>.refreshEvery(time: Long, timeUnit: TimeUnit): Observable<T> = Observable.interval(0, time, timeUnit).flatMap { this }
+fun <T> Observable<T>.refreshEvery(time: Long, timeUnit: TimeUnit): Observable<T> =
+    Observable.interval(0, time, timeUnit).flatMap { this }
 
 /**
  * Returns an Observable that emits the source observable every time the [publisher] observable emits true
@@ -96,33 +108,33 @@ fun <R, T> Observable<List<T>>.mapList(mapper: io.reactivex.functions.Function<i
 }
 
 /**
- * Mute the observable until the predicate [func] returns true, retrying using the given [delay]
+ * Mute the source [Observable] until the predicate [func] returns true, retrying using the given [delay]
  */
 fun <T> Observable<T>.muteUntil(delay: Long, unit: TimeUnit, func: () -> Boolean): Observable<T> {
     return this.doOnNext { if (func()) throw MuteException() }
-            .retryWhen { t: Observable<Throwable> ->
-                t.flatMap { error: Throwable ->
-                    if (error is MuteException) Observable.timer(delay, unit)
-                    else Observable.error(error)
-                }
+        .retryWhen { t: Observable<Throwable> ->
+            t.flatMap { error: Throwable ->
+                if (error is MuteException) Observable.timer(delay, unit)
+                else Observable.error(error)
             }
+        }
 }
 
 fun <T> Observable<T>.debug(tag: String): Observable<T> {
     return this
-            .doOnNext { Log.v(tag, "onNext($it)") }
-            .doOnError { Log.e(tag, "onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
-            .doOnComplete { Log.v(tag, "onComplete()") }
-            .doOnDispose { Log.w(tag, "onDispose()") }
+        .doOnNext { Log.v(tag, "onNext($it)") }
+        .doOnError { Log.e(tag, "onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+        .doOnComplete { Log.v(tag, "onComplete()") }
+        .doOnDispose { Log.w(tag, "onDispose()") }
 }
 
 fun <T> Observable<T>.debugWithThread(tag: String): Observable<T> {
     return this
-            .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
-            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
-            .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
-            .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
+        .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
+        .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+        .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
+        .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
 }
 
