@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package it.sephiroth.android.rxjava2.extensions.disposable
 
 import io.reactivex.disposables.Disposable
@@ -8,6 +10,7 @@ import io.reactivex.disposables.Disposable
  *
  * @author Alessandro Crugnola on 28.02.21 - 18:34
  */
+
 
 /**
  * Safe unsubscribe a [Disposable]
@@ -22,3 +25,4 @@ fun Disposable?.disposeSafe() {
  * Returns true if a [Disposable] is currently not null and not unsubscribed
  */
 fun Disposable?.isDisposed(): Boolean = this?.isDisposed ?: true
+

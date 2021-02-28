@@ -53,18 +53,18 @@ fun delay(delay: Long, unit: TimeUnit, action: (() -> Unit)?): AutoDisposableCom
     }
 }
 
-fun <T> Completable.debug(tag: String): Completable {
+fun Completable.debug(tag: String): Completable {
     return this
-            .doOnError { Log.e(tag, "onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
-            .doOnComplete { Log.v(tag, "onComplete()") }
-            .doOnDispose { Log.w(tag, "onDispose()") }
+        .doOnError { Log.e(tag, "onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+        .doOnComplete { Log.v(tag, "onComplete()") }
+        .doOnDispose { Log.w(tag, "onDispose()") }
 }
 
-fun <T> Completable.debugWithThread(tag: String): Completable {
+fun Completable.debugWithThread(tag: String): Completable {
     return this
-            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
-            .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
-            .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
+        .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+        .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
+        .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
 }

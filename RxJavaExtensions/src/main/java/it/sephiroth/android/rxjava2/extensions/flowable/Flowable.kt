@@ -16,24 +16,24 @@ import java.util.concurrent.TimeUnit
 
 fun <T> Flowable<T>.debug(tag: String): Flowable<T> {
     return this
-            .doOnNext { Log.v(tag, "onNext($it)") }
-            .doOnError { Log.e(tag, "onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
-            .doOnComplete { Log.v(tag, "onComplete()") }
-            .doOnCancel { Log.w(tag, "onCancel()") }
-            .doOnRequest { Log.w(tag, "onRequest()") }
-            .doOnTerminate { Log.w(tag, "onTerminate()") }
+        .doOnNext { Log.v(tag, "onNext($it)") }
+        .doOnError { Log.e(tag, "onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+        .doOnComplete { Log.v(tag, "onComplete()") }
+        .doOnCancel { Log.w(tag, "onCancel()") }
+        .doOnRequest { Log.w(tag, "onRequest()") }
+        .doOnTerminate { Log.w(tag, "onTerminate()") }
 }
 
 fun <T> Flowable<T>.debugWithThread(tag: String): Flowable<T> {
     return this
-            .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
-            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
-            .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
-            .doOnCancel { Log.w(tag, "[${Thread.currentThread().name}] onCancel()") }
-            .doOnRequest { Log.w(tag, "[${Thread.currentThread().name}] onRequest()") }
-            .doOnTerminate { Log.w(tag, "[${Thread.currentThread().name}] onTerminate()") }
+        .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
+        .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+        .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
+        .doOnCancel { Log.w(tag, "[${Thread.currentThread().name}] onCancel()") }
+        .doOnRequest { Log.w(tag, "[${Thread.currentThread().name}] onRequest()") }
+        .doOnTerminate { Log.w(tag, "[${Thread.currentThread().name}] onTerminate()") }
 }
 
 /**

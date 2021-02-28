@@ -22,30 +22,3 @@ class BroadcastReceiverObserver(val emitter: ObservableEmitter<Intent>) : Broadc
         emitter.onNext(intent)
     }
 }
-
-/**
- * Register a new broadcast receiver from a given a list of actions.
- * The [BroadcastReceiver] it's unregistered once the observable is disposed
- */
-fun Context.observeBroadcasts(vararg action: String): Observable<Intent> {
-    val filter = IntentFilter()
-    action.forEach { filter.addAction(it) }
-    return observeBroadcasts(filter)
-}
-
-@Suppress("TooGenericExceptionCaught")
-fun Context.observeBroadcasts(intentFilter: IntentFilter): Observable<Intent> {
-    return Observable.create { observer ->
-        var receiver: BroadcastReceiverObserver? = BroadcastReceiverObserver(observer)
-        observer.setDisposable(Disposables.fromRunnable {
-            receiver?.let {
-                try {
-                    unregisterReceiver(it)
-                } catch (t: Throwable) {
-                    t.printStackTrace()
-                }; receiver = null
-            }
-        })
-        registerReceiver(receiver, intentFilter)
-    }
-}
