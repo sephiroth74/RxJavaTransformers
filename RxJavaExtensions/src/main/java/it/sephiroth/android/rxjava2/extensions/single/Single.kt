@@ -42,7 +42,7 @@ fun <T> Single<T>.autoSubscribe(builder: (AutoDisposableSingleObserver<T>.() -> 
 }
 
 /**
- * alias for Observable.observeOn(AndroidSchedulers.mainThread())
+ * alias for <code>Single.observeOn(AndroidSchedulers.mainThread())</code>
  */
 fun <T> Single<T>.observeMain(): Single<T> {
     return observeOn(AndroidSchedulers.mainThread())
@@ -60,7 +60,7 @@ fun <R, T> Single<List<T>>.mapList(mapper: io.reactivex.functions.Function<in T,
 
 
 /**
- * Enable debug logs from an [Observable], emitting
+ * Enable debug logs from a [Single], emitting
  * onNext, onError, onSubscribe and onComplete
  */
 fun <T> Single<T>.debug(tag: String): Single<T> {
