@@ -1,7 +1,8 @@
 @file:Suppress("unused")
 
-package it.sephiroth.android.rxjava2.extensions
+package it.sephiroth.android.rxjava2.extensions.maybe
 
+import android.util.Log
 import io.reactivex.Maybe
 import io.reactivex.android.schedulers.AndroidSchedulers
 import it.sephiroth.android.rxjava2.extensions.observers.AutoDisposableMaybeObserver
@@ -35,3 +36,25 @@ fun <T> Maybe<T>.observeMain(): Maybe<T> {
     return observeOn(AndroidSchedulers.mainThread())
 }
 
+
+/**
+ * Enable debug logs from a [Maybe], emitting
+ * onNext, onError, onSubscribe and onComplete
+ */
+fun <T> Maybe<T>.debug(tag: String): Maybe<T> {
+    return this
+            .doOnSuccess { Log.v(tag, "onSuccess($it)") }
+            .doOnError { Log.e(tag, "onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+            .doOnComplete { Log.v(tag, "onComplete()") }
+            .doOnDispose { Log.w(tag, "onDispose()") }
+}
+
+fun <T> Maybe<T>.debugWithThread(tag: String): Maybe<T> {
+    return this
+            .doOnSuccess { Log.v(tag, "[${Thread.currentThread().name}] onSuccess()") }
+            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+            .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
+            .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
+}

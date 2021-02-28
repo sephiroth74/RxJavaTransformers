@@ -1,12 +1,16 @@
 @file:Suppress("unused")
 
-package it.sephiroth.android.rxjava2.extensions
+package it.sephiroth.android.rxjava2.extensions.observable
 
+import android.util.Log
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.annotations.CheckReturnValue
+import io.reactivex.annotations.SchedulerSupport
 import io.reactivex.rxkotlin.Observables
+import it.sephiroth.android.rxjava2.extensions.MuteException
 import it.sephiroth.android.rxjava2.extensions.observers.AutoDisposableObserver
 import java.util.concurrent.TimeUnit
 
@@ -76,5 +80,51 @@ fun <T> Observable<T>.refreshEvery(time: Long, timeUnit: TimeUnit): Observable<T
  */
 fun <T> Observable<T>.autoRefresh(publisher: Observable<Boolean>): Observable<T> {
     return publisher.filter { it }.flatMap { this }
+}
+
+
+/**
+ * Converts the elements of a list of an Observable
+ */
+@CheckReturnValue
+@SchedulerSupport(SchedulerSupport.NONE)
+fun <R, T> Observable<List<T>>.mapList(mapper: io.reactivex.functions.Function<in T, out R>): Observable<List<R>> {
+    return this.map { list -> list.map { mapper.apply(it) } }
+}
+
+/**
+
+ */
+fun <T> Observable<T>.muteUntil(delay: Long, unit: TimeUnit, func: () -> Boolean): Observable<T> {
+    return this.doOnNext { if (func()) throw MuteException() }
+            .retryWhen { t: Observable<Throwable> ->
+                t.flatMap { error: Throwable ->
+                    if (error is MuteException) Observable.timer(delay, unit)
+                    else Observable.error(error)
+                }
+            }
+}
+
+
+/**
+ * Enable debug logs from an [Observable], emitting
+ * onNext, onError, onSubscribe and onComplete
+ */
+fun <T> Observable<T>.debug(tag: String): Observable<T> {
+    return this
+            .doOnNext { Log.v(tag, "onNext($it)") }
+            .doOnError { Log.e(tag, "onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+            .doOnComplete { Log.v(tag, "onComplete()") }
+            .doOnDispose { Log.w(tag, "onDispose()") }
+}
+
+fun <T> Observable<T>.debugWithThread(tag: String): Observable<T> {
+    return this
+            .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
+            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+            .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
+            .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
 }
 

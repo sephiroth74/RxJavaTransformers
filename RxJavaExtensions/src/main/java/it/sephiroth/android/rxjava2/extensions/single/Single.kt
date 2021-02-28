@@ -1,10 +1,14 @@
 @file:Suppress("unused")
 
-package it.sephiroth.android.rxjava2.extensions
+package it.sephiroth.android.rxjava2.extensions.single
 
+import android.util.Log
 import io.reactivex.Maybe
+import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.annotations.CheckReturnValue
+import io.reactivex.annotations.SchedulerSupport
 import it.sephiroth.android.rxjava2.extensions.observers.AutoDisposableSingleObserver
 
 
@@ -44,3 +48,33 @@ fun <T> Single<T>.observeMain(): Single<T> {
     return observeOn(AndroidSchedulers.mainThread())
 }
 
+
+/**
+ * Converts the elements of a list of a Single
+ */
+@CheckReturnValue
+@SchedulerSupport(SchedulerSupport.NONE)
+fun <R, T> Single<List<T>>.mapList(mapper: io.reactivex.functions.Function<in T, out R>) : Single<List<R>> {
+    return this.map { list -> list.map { mapper.apply(it) } }
+}
+
+
+/**
+ * Enable debug logs from an [Observable], emitting
+ * onNext, onError, onSubscribe and onComplete
+ */
+fun <T> Single<T>.debug(tag: String): Single<T> {
+    return this
+            .doOnError { Log.e(tag, "onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+            .doOnSuccess { Log.v(tag, "onSuccess()") }
+            .doOnDispose { Log.w(tag, "onDispose()") }
+}
+
+fun <T> Single<T>.debugWithThread(tag: String): Single<T> {
+    return this
+            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+            .doOnSuccess { Log.v(tag, "[${Thread.currentThread().name}] onSuccess()") }
+            .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
+}

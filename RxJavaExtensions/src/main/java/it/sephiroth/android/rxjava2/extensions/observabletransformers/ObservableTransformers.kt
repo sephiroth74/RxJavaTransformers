@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package it.sephiroth.android.rxjava2.extensions
+package it.sephiroth.android.rxjava2.extensions.observabletransformers
 
 import io.reactivex.ObservableSource
 import io.reactivex.ObservableTransformer

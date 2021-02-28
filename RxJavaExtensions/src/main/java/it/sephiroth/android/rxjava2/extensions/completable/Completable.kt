@@ -1,7 +1,8 @@
 @file:Suppress("unused")
 
-package it.sephiroth.android.rxjava2.extensions
+package it.sephiroth.android.rxjava2.extensions.completable
 
+import android.util.Log
 import io.reactivex.Completable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import it.sephiroth.android.rxjava2.extensions.observers.AutoDisposableCompletableObserver
@@ -50,4 +51,20 @@ fun delay(delay: Long, unit: TimeUnit, action: (() -> Unit)?): AutoDisposableCom
     return Completable.complete().delay(delay, unit).observeMain().autoSubscribe {
         doOnComplete { action?.invoke() }
     }
+}
+
+fun <T> Completable.debug(tag: String): Completable {
+    return this
+            .doOnError { Log.e(tag, "onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+            .doOnComplete { Log.v(tag, "onComplete()") }
+            .doOnDispose { Log.w(tag, "onDispose()") }
+}
+
+fun <T> Completable.debugWithThread(tag: String): Completable {
+    return this
+            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+            .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
+            .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
 }
