@@ -37,10 +37,6 @@ fun <T> Maybe<T>.observeMain(): Maybe<T> {
 }
 
 
-/**
- * Enable debug logs from a [Maybe], emitting
- * onNext, onError, onSubscribe and onComplete
- */
 fun <T> Maybe<T>.debug(tag: String): Maybe<T> {
     return this
             .doOnSuccess { Log.v(tag, "onSuccess($it)") }

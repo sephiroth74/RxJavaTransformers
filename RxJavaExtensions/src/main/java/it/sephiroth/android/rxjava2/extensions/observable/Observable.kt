@@ -61,6 +61,9 @@ fun <T> Observable<T>.observeMain(): Observable<T> {
     return observeOn(AndroidSchedulers.mainThread())
 }
 
+/**
+ * Retries an Observable when the predicate succeeds
+ */
 fun <T> Observable<T>.retry(predicate: (Throwable) -> Boolean, maxRetry: Int, delayBeforeRetry: Long, timeUnit: TimeUnit): Observable<T> =
         retryWhen { observable ->
             Observables.zip(
@@ -93,7 +96,7 @@ fun <R, T> Observable<List<T>>.mapList(mapper: io.reactivex.functions.Function<i
 }
 
 /**
-
+ * Mute the observable until the predicate [func] returns true, retrying using the given [delay]
  */
 fun <T> Observable<T>.muteUntil(delay: Long, unit: TimeUnit, func: () -> Boolean): Observable<T> {
     return this.doOnNext { if (func()) throw MuteException() }
@@ -105,11 +108,6 @@ fun <T> Observable<T>.muteUntil(delay: Long, unit: TimeUnit, func: () -> Boolean
             }
 }
 
-
-/**
- * Enable debug logs from an [Observable], emitting
- * onNext, onError, onSubscribe and onComplete
- */
 fun <T> Observable<T>.debug(tag: String): Observable<T> {
     return this
             .doOnNext { Log.v(tag, "onNext($it)") }
