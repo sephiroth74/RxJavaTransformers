@@ -62,8 +62,8 @@ class ObservableTransformerTest {
             }
             .test()
             .awaitDone(5, TimeUnit.SECONDS)
-            .assertValueCount(3)
             .assertValues(3, 6, 8)
+            .assertValueCount(3)
 
 
         println("done")

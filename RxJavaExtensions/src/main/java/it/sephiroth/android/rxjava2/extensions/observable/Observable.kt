@@ -5,11 +5,13 @@ package it.sephiroth.android.rxjava2.extensions.observable
 import android.util.Log
 import io.reactivex.Maybe
 import io.reactivex.Observable
+import io.reactivex.Scheduler
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.annotations.CheckReturnValue
 import io.reactivex.annotations.SchedulerSupport
 import io.reactivex.rxkotlin.Observables
+import io.reactivex.schedulers.Schedulers
 import it.sephiroth.android.rxjava2.extensions.MuteException
 import it.sephiroth.android.rxjava2.extensions.observers.AutoDisposableObserver
 import java.util.concurrent.TimeUnit
@@ -87,8 +89,12 @@ fun <T> Observable<T>.retry(
  * Returns an Observable that emits the source observable every [time]. The source observable is triggered immediately
  * and all the consecutive calls after the time specified
  */
-fun <T> Observable<T>.refreshEvery(time: Long, timeUnit: TimeUnit): Observable<T> =
-    Observable.interval(0, time, timeUnit).flatMap { this }
+fun <T> Observable<T>.refreshEvery(
+    time: Long,
+    timeUnit: TimeUnit,
+    scheduler: Scheduler = Schedulers.computation()
+): Observable<T> =
+    Observable.interval(0, time, timeUnit, scheduler).flatMap { this }
 
 /**
  * Returns an Observable that emits the source observable every time the [publisher] observable emits true

@@ -1,10 +1,17 @@
 package it.sephiroth.android.rxjava2.extensions
 
 import io.reactivex.Observable
+import io.reactivex.Scheduler
+import io.reactivex.android.plugins.RxAndroidPlugins
+import io.reactivex.disposables.Disposable
 import io.reactivex.functions.Function
+import io.reactivex.internal.schedulers.ExecutorScheduler
+import io.reactivex.plugins.RxJavaPlugins
+import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import it.sephiroth.android.rxjava2.extensions.observable.*
 import org.junit.Assert
+import org.junit.BeforeClass
 import org.junit.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -65,7 +72,7 @@ class ObservableTest {
         val latch = CountDownLatch(1)
         Observable
             .just(1)
-            .refreshEvery(50, TimeUnit.MILLISECONDS)
+            .refreshEvery(50, TimeUnit.MILLISECONDS, Schedulers.newThread())
             .autoSubscribe {
                 doOnNext {
                     if (counter.incrementAndGet() > 9) {
@@ -94,6 +101,7 @@ class ObservableTest {
 
         val o = Observable
             .just(1)
+            .subscribeOn(Schedulers.newThread())
             .autoRefresh(publisher)
             .doOnNext { counter.incrementAndGet() }
             .test()
@@ -129,7 +137,7 @@ class ObservableTest {
                 if (count >= 10) emitter.onComplete()
                 Thread.sleep(1000)
             }
-        }
+        }.subscribeOn(Schedulers.newThread())
             .retry(
                 predicate = {
                     println("[${System.currentTimeMillis()}] predicate running...")
@@ -175,6 +183,7 @@ class ObservableTest {
                 println("[${System.currentTimeMillis() - now}] mute until predicate")
                 System.currentTimeMillis() - now < 1000
             }, delay = 100, unit = TimeUnit.MILLISECONDS)
+            .subscribeOn(Schedulers.newThread())
             .test()
             .await()
             .assertValueCount(5)
@@ -185,5 +194,13 @@ class ObservableTest {
         println("totalTime: $totalTime")
 
         Assert.assertTrue(totalTime > 1000)
+    }
+
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpRxSchedulers() {
+
+        }
     }
 }

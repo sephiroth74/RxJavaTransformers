@@ -84,10 +84,6 @@ class CompletableTest {
                     return ExecutorWorker({ obj: Runnable -> obj.run() }, true)
                 }
             }
-            RxJavaPlugins.setInitIoSchedulerHandler { immediate }
-            RxJavaPlugins.setInitComputationSchedulerHandler { immediate }
-            RxJavaPlugins.setInitNewThreadSchedulerHandler { immediate }
-            RxJavaPlugins.setInitSingleSchedulerHandler { immediate }
             RxAndroidPlugins.setInitMainThreadSchedulerHandler { immediate }
         }
     }
