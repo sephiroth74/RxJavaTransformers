@@ -25,10 +25,17 @@ import java.util.concurrent.atomic.AtomicReference
  * @param other the observable which will open/close the valve
  * @param defaultOpen true if the valve if to be considered opened by default
  */
-class ObservableLastValve<T>(val other: ObservableSource<Boolean>, val defaultOpen: Boolean) : Observable<T>(), ObservableTransformer<T, T> {
+class ObservableLastValve<T>(
+    private val other: ObservableSource<Boolean>,
+    private val defaultOpen: Boolean
+) : Observable<T>(), ObservableTransformer<T, T> {
     lateinit var source: Observable<out T>
 
-    constructor(source: Observable<out T>, other: ObservableSource<Boolean>, defaultOpen: Boolean) : this(other, defaultOpen) {
+    constructor(
+        source: Observable<out T>,
+        other: ObservableSource<Boolean>,
+        defaultOpen: Boolean
+    ) : this(other, defaultOpen) {
         this.source = source
     }
 
@@ -43,7 +50,10 @@ class ObservableLastValve<T>(val other: ObservableSource<Boolean>, val defaultOp
         return ObservableLastValve(upstream, other, defaultOpen)
     }
 
-    internal class ValveMainObserver<T>(private val downstream: Observer<in T>, defaultOpen: Boolean) : Observer<T>, Disposable, Serializable {
+    internal class ValveMainObserver<T>(
+        private val downstream: Observer<in T>,
+        defaultOpen: Boolean
+    ) : Observer<T>, Disposable, Serializable {
         private val upstream: AtomicReference<Disposable> = AtomicReference()
         internal val other: OtherSubscriber = OtherSubscriber()
         private val error: AtomicThrowable = AtomicThrowable()
@@ -149,7 +159,8 @@ class ObservableLastValve<T>(val other: ObservableSource<Boolean>, val defaultOp
             innerError(IllegalStateException("The valve source completed unexpectedly."))
         }
 
-        internal inner class OtherSubscriber : AtomicReference<Disposable?>(), Observer<Boolean>, Serializable {
+        internal inner class OtherSubscriber : AtomicReference<Disposable?>(), Observer<Boolean>,
+            Serializable {
             override fun onSubscribe(d: Disposable) {
                 DisposableHelper.setOnce(this, d)
             }

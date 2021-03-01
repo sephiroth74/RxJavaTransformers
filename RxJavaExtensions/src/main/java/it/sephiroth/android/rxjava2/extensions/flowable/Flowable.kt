@@ -45,14 +45,15 @@ fun <T> Flowable<T>.observeMain(): Flowable<T> {
 
 /**
  * Returns a Flowable that skips all items emitted by the source emitter
- * until a specified interval passed.
+ * until a specified interval passed between each emission..
  *
  */
 fun <T : Any> Flowable<T>.skipBetween(time: Long, unit: TimeUnit): Flowable<T> {
-    var t: Long = 0
+    var t: Long = System.currentTimeMillis()
     return this.filter {
+        val waitTime = unit.toMillis(time)
         val elapsed = (System.currentTimeMillis() - t)
-        if (elapsed > unit.toMillis(time)) {
+        if (elapsed > waitTime) {
             t = System.currentTimeMillis()
             true
         } else {
