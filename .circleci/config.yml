@@ -75,13 +75,13 @@ jobs:
           name: Run Lint
           command: ./gradlew lint            
 
-      - run:
-          name: Run Tests
-          command: ./gradlew test     
+      # - run:
+      #     name: Run Tests
+      #     command: ./gradlew test     
 
-      - run:
-          name: Run  Create Coverage Reports
-          command: ./gradlew createDebugCoverageReport                                      
+      # - run:
+      #     name: Run Create Coverage Reports
+      #     command: ./gradlew createDebugCoverageReport                                      
 
       - store_artifacts:
           path: RxJavaExtensions/build/reports
