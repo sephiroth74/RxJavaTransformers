@@ -10,24 +10,23 @@ jobs:
       resource-class: medium
     steps:
       - checkout
-      - android/create-avd:
-          avd-name: myavd
-          install: true
-          system-image: system-images;android-29;default;x86
-      - android/start-emulator:
-          avd-name: myavd
-          no-window: true
-          restore-gradle-cache-prefix: v1a
+#      - android/create-avd:
+#          avd-name: myavd
+#          install: true
+#          system-image: system-images;android-29;default;x86
+#      - android/start-emulator:
+#          avd-name: myavd
+#          no-window: true
+#          restore-gradle-cache-prefix: v1a
       - android/run-tests
-      - android/start-emulator-and-run-tests:
-          system-image: system-images;android-29;default;x86
-
-      - android/save-gradle-cache:
-          cache-prefix: v1a
+#      - android/start-emulator-and-run-tests:
+#          system-image: system-images;android-29;default;x86
+#      - android/save-gradle-cache:
+#          cache-prefix: v1a
 
   build:
-    docker:
-      - image: circleci/android:api-29
+    # docker:
+    #   - image: circleci/android:api-29
 
     executor: android/android
 
@@ -53,35 +52,9 @@ jobs:
           name: Build
           command: ./gradlew build
 
-#      - run:
-#          name: Setup emulator
-#          command: sdkmanager "system-images;android-29;default;x86" && echo "no" | avdmanager create avd -n test -k "system-images;android-29;default;x86"
-
-#      - run:
-#          name: Launch emulator
-#          command: export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib && emulator64-arm -avd test -noaudio -no-boot-anim -no-window -accel on
-#          background: true
-
-#      - run:
-#          name: Wait emulator
-#          command: |
-#            # wait for it to have booted
-#            circle-android wait-for-boot
-#            # unlock the emulator screen
-#            sleep 30
-#            adb shell input keyevent 82
-
       - run:
           name: Run Lint
           command: ./gradlew lint            
-
-      # - run:
-      #     name: Run Tests
-      #     command: ./gradlew test     
-
-      # - run:
-      #     name: Run Create Coverage Reports
-      #     command: ./gradlew createDebugCoverageReport                                      
 
       - store_artifacts:
           path: RxJavaExtensions/build/reports
@@ -90,11 +63,15 @@ jobs:
       - store_test_results:
           path: RxJavaExtensions/build/test-results
 
+
 workflows:
   test:
     jobs:
       - test
       - android/run-ui-tests:
+          executor:
+            name: android/android-machine
+            resource-class: medium
           wait-for-emulator: true
           test-command: ./gradlew connectedCheck createDebugCoverageReport
           system-image: system-images;android-28;default;x86

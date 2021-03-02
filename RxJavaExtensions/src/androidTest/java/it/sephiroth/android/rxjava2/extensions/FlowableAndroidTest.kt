@@ -24,7 +24,6 @@ class FlowableAndroidTest {
     @Test
     fun test01() {
         val now = System.currentTimeMillis()
-        val total = AtomicInteger(0)
 
         Observable.create<Int> { emitter ->
 
