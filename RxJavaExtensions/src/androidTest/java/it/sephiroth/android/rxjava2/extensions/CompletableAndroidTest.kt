@@ -1,27 +1,32 @@
 package it.sephiroth.android.rxjava2.extensions
 
+import android.os.Looper
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
 import io.reactivex.Completable
-import io.reactivex.Scheduler
-import io.reactivex.android.plugins.RxAndroidPlugins
-import io.reactivex.disposables.Disposable
-import io.reactivex.internal.schedulers.ExecutorScheduler.ExecutorWorker
-import io.reactivex.plugins.RxJavaPlugins
+import io.reactivex.schedulers.Schedulers
 import it.sephiroth.android.rxjava2.extensions.completable.autoSubscribe
+import it.sephiroth.android.rxjava2.extensions.completable.debug
 import it.sephiroth.android.rxjava2.extensions.completable.delay
+import it.sephiroth.android.rxjava2.extensions.completable.observeMain
 import it.sephiroth.android.rxjava2.extensions.observers.AutoDisposableCompletableObserver
 import org.junit.Assert
-import org.junit.BeforeClass
 import org.junit.Test
+import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 
 /**
  * RxJavaExtensions
+ * $ adb shell am instrument -w -m  --no-window-animation  -e debug false -e class 'it.sephiroth.android.rxjava2.extensions.CompletableAndroidTest' it.sephiroth.android.rxjava2.extensions.test/androidx.test.runner.AndroidJUnitRunner
  *
- * @author Alessandro Crugnola on 01.03.21 - 09:53
+ * @author Alessandro Crugnola on 02.03.21 - 13:26
  */
-class CompletableTest {
+@RunWith(AndroidJUnit4::class)
+@SmallTest
+class CompletableAndroidTest {
+
     @Test
     fun test01() {
         val now = System.currentTimeMillis()
@@ -66,25 +71,27 @@ class CompletableTest {
         Assert.assertEquals(0, latch.count)
     }
 
-    companion object {
-        @BeforeClass
-        @JvmStatic
-        fun setUpRxSchedulers() {
-            val immediate: Scheduler = object : Scheduler() {
-                override fun scheduleDirect(
-                    run: Runnable,
-                    delay: Long,
-                    unit: TimeUnit
-                ): Disposable {
-                    Thread.sleep(unit.toMillis(delay))
-                    return super.scheduleDirect(run, 0, unit)
-                }
-
-                override fun createWorker(): Worker {
-                    return ExecutorWorker({ obj: Runnable -> obj.run() }, true)
-                }
-            }
-            RxAndroidPlugins.setInitMainThreadSchedulerHandler { immediate }
+    @Test
+    fun test04() {
+        val looper = Looper.getMainLooper()
+        Completable.create { emitter ->
+            Assert.assertTrue(Thread.currentThread() != looper.thread)
+            emitter.onComplete()
         }
+            .subscribeOn(Schedulers.computation())
+            .observeMain()
+            .doOnComplete {
+                Assert.assertTrue(Thread.currentThread() == looper.thread)
+            }
+            .test()
+            .awaitDone(1, TimeUnit.SECONDS)
+            .assertComplete()
+    }
+
+    @Test
+    fun test05() {
+        Completable
+            .timer(20, TimeUnit.MILLISECONDS)
+            .debug("completable")
     }
 }

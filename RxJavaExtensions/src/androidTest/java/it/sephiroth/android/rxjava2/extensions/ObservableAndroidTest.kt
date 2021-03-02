@@ -1,18 +1,14 @@
 package it.sephiroth.android.rxjava2.extensions
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
 import io.reactivex.Observable
-import io.reactivex.Scheduler
-import io.reactivex.android.plugins.RxAndroidPlugins
-import io.reactivex.disposables.Disposable
-import io.reactivex.functions.Function
-import io.reactivex.internal.schedulers.ExecutorScheduler
-import io.reactivex.plugins.RxJavaPlugins
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import it.sephiroth.android.rxjava2.extensions.observable.*
 import org.junit.Assert
-import org.junit.BeforeClass
 import org.junit.Test
+import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
@@ -21,14 +17,17 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * RxJavaExtensions
  *
- * @author Alessandro Crugnola on 01.03.21 - 08:32
+ * @author Alessandro Crugnola on 02.03.21 - 13:47
  */
-class ObservableTest {
+@RunWith(AndroidJUnit4::class)
+@SmallTest
+class ObservableAndroidTest {
     @Test
     fun test01() {
         val o = Observable.just(1, 2, 3, 4, 5)
             .toSingle()
-            .test().await()
+            .test()
+            .await()
 
         o.assertComplete()
         o.assertResult(1)
@@ -61,7 +60,6 @@ class ObservableTest {
 
         latch.await(1, TimeUnit.SECONDS)
         Assert.assertEquals(0, latch.count)
-
         Assert.assertTrue(d.isDisposed)
     }
 
@@ -84,7 +82,6 @@ class ObservableTest {
             }
 
         latch.await(1, TimeUnit.SECONDS)
-
         Assert.assertEquals(10, counter.get())
 
         val totalTime = System.currentTimeMillis() - now
@@ -194,13 +191,5 @@ class ObservableTest {
         println("totalTime: $totalTime")
 
         Assert.assertTrue(totalTime > 1000)
-    }
-
-    companion object {
-        @BeforeClass
-        @JvmStatic
-        fun setUpRxSchedulers() {
-
-        }
     }
 }

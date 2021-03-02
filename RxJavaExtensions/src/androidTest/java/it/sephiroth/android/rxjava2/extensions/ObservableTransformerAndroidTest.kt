@@ -1,11 +1,13 @@
 package it.sephiroth.android.rxjava2.extensions
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
 import it.sephiroth.android.rxjava2.extensions.observabletransformers.ObservableTransformers
 import org.junit.Test
+import org.junit.runner.RunWith
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 
 
 /**
@@ -13,7 +15,9 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  * @author Alessandro Crugnola on 01.03.21 - 10:53
  */
-class ObservableTransformerTest {
+@RunWith(AndroidJUnit4::class)
+@SmallTest
+class ObservableTransformerAndroidTest {
     @Test
     fun test01() {
         val now = System.currentTimeMillis()

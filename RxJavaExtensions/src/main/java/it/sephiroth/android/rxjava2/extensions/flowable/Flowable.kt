@@ -47,9 +47,18 @@ fun <T> Flowable<T>.observeMain(): Flowable<T> {
  * Returns a Flowable that skips all items emitted by the source emitter
  * until a specified interval passed between each emission..
  *
+ * @param time minimum amount of time need to pass between each interactions
+ * @param unit time unit for the [time] param
+ * @param defaultOpened if true the very first emission of the source [Flowable] will be allowed, false otherwise
+ *
  */
-fun <T : Any> Flowable<T>.skipBetween(time: Long, unit: TimeUnit): Flowable<T> {
-    var t: Long = System.currentTimeMillis()
+fun <T : Any> Flowable<T>.skipBetween(
+    time: Long,
+    unit: TimeUnit,
+    defaultOpened: Boolean = true
+): Flowable<T> {
+
+    var t: Long = if (defaultOpened) 0 else System.currentTimeMillis()
     return this.filter {
         val waitTime = unit.toMillis(time)
         val elapsed = (System.currentTimeMillis() - t)
