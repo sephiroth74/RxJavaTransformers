@@ -21,9 +21,10 @@ jobs:
 #          no-boot-anim: true
 #          restore-gradle-cache-prefix: v1a
 #          wait-for-emulator: true
-      - android/run-tests
+#      - android/run-tests
       
       - android/start-emulator-and-run-tests:
+          verbose: true
           avd-name: myavd
           no-window: true
           no-audio: true
