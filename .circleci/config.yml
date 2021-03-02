@@ -9,7 +9,7 @@ jobs:
 
     steps:
       - checkout
-      - 
+
       - run:
           name: Build
           command: ./gradlew build
@@ -18,9 +18,9 @@ jobs:
           name: Run Tests
           command: ./gradlew :RxJavaExtensions:lint :RxJavaExtensions:testDebugUnitTest
 
-      - store_artifacts: # for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
-          path: app/build/reports
+      - store_artifacts:
+          path: RxJavaExtensions/build/reports
           destination: reports
 
-      - store_test_results: # for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
-          path: app/build/test-results
+      - store_test_results:
+          path: RxJavaExtensions/build/test-results
