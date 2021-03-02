@@ -32,6 +32,11 @@ jobs:
       - store_test_results:
           path: RxJavaExtensions/build/test-results
 
+      - run:
+          name: Test Success
+          when: on_success
+          command: ./gradlew coveralls
+
   build:
     executor: android/android
 
@@ -74,6 +79,7 @@ workflows:
     jobs:
       - build
       - test
+
 #      - android/run-ui-tests:
 #          executor:
 #            name: android/android-machine
