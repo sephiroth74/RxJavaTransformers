@@ -10,19 +10,7 @@ jobs:
       resource-class: medium
     steps:
       - checkout
-      - android/create-avd:
-          avd-name: myavd
-          install: true
-          system-image: system-images;android-29;default;x86
-#      - android/start-emulator:
-#          avd-name: myavd
-#          no-window: true
-#          no-audio: true
-#          no-boot-anim: true
-#          restore-gradle-cache-prefix: v1a
-#          wait-for-emulator: true
-#      - android/run-tests
-      
+    
       - android/start-emulator-and-run-tests:
           verbose: true
           avd-name: myavd
@@ -31,6 +19,7 @@ jobs:
           no-boot-anim: true
           restore-gradle-cache-prefix: v1a
           wait-for-emulator: true        
+          system-image: system-images;android-29;default;x86   
           test-command: ./gradlew test createDebugCoverageReport
 
       - android/save-gradle-cache:
