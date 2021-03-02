@@ -91,8 +91,6 @@ class ObservableAndroidTest {
 
     @Test
     fun test05() {
-        val initial = System.currentTimeMillis()
-        var now = System.currentTimeMillis()
         val counter = AtomicInteger(0)
         val publisher = PublishSubject.create<Boolean>()
 
@@ -103,20 +101,19 @@ class ObservableAndroidTest {
             .doOnNext { counter.incrementAndGet() }
             .test()
 
-        while (true) {
-            if (System.currentTimeMillis() - initial > 550) {
-                break
-            }
 
-            if (System.currentTimeMillis() - now > 50) {
-                publisher.onNext(true)
-                now = System.currentTimeMillis()
-            }
-        }
+        Thread.sleep(10)
+        publisher.onNext(true)
 
-        o.awaitCount(10)
+        Thread.sleep(10)
+        publisher.onNext(false)
 
-        Assert.assertEquals(10, counter.get())
+        Thread.sleep(10)
+        publisher.onNext(true)
+
+        o.awaitCount(2)
+
+        Assert.assertEquals(2, counter.get())
     }
 
     @Test
