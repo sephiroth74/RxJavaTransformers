@@ -10,26 +10,37 @@ jobs:
       resource-class: medium
     steps:
       - checkout
-#      - android/create-avd:
-#          avd-name: myavd
-#          install: true
-#          system-image: system-images;android-29;default;x86
+      - android/create-avd:
+          avd-name: myavd
+          install: true
+          system-image: system-images;android-29;default;x86
 #      - android/start-emulator:
 #          avd-name: myavd
 #          no-window: true
+#          no-audio: true
+#          no-boot-anim: true
 #          restore-gradle-cache-prefix: v1a
+#          wait-for-emulator: true
       - android/run-tests
-#      - android/start-emulator-and-run-tests:
-#          system-image: system-images;android-29;default;x86
-#      - android/save-gradle-cache:
-#          cache-prefix: v1a
+      
+      - android/start-emulator-and-run-tests:
+          avd-name: myavd
+          no-window: true
+          no-audio: true
+          no-boot-anim: true
+          restore-gradle-cache-prefix: v1a
+          wait-for-emulator: true        
+          test-command: ./gradlew test createDebugCoverageReport
+
+      - android/save-gradle-cache:
+          cache-prefix: v1a
+
       - store_artifacts:
           path: RxJavaExtensions/build/reports
           destination: reports
 
       - store_test_results:
           path: RxJavaExtensions/build/test-results
-
 
   build:
     executor: android/android
@@ -58,7 +69,7 @@ jobs:
 
       - run:
           name: Run Lint
-          command: ./gradlew lint            
+          command: ./gradlew lint
 
       - store_artifacts:
           path: RxJavaExtensions/build/reports
@@ -71,8 +82,8 @@ jobs:
 workflows:
   test:
     jobs:
-#      - test
       - build
+      - test
 #      - android/run-ui-tests:
 #          executor:
 #            name: android/android-machine
