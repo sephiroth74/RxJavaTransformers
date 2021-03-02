@@ -1,3 +1,5 @@
+![CircleCI](https://img.shields.io/circleci/build/github/sephiroth74/RxJavaExtensions)
+
 # RxJavaExtensions
 
 Set of extensions for RxJava https://github.com/ReactiveX/RxJava
