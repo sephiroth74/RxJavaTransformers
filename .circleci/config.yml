@@ -23,11 +23,15 @@ jobs:
 #          system-image: system-images;android-29;default;x86
 #      - android/save-gradle-cache:
 #          cache-prefix: v1a
+      - store_artifacts:
+          path: RxJavaExtensions/build/reports
+          destination: reports
+
+      - store_test_results:
+          path: RxJavaExtensions/build/test-results
+
 
   build:
-    # docker:
-    #   - image: circleci/android:api-29
-
     executor: android/android
 
     steps:
@@ -67,13 +71,14 @@ jobs:
 workflows:
   test:
     jobs:
-      - test
-      - android/run-ui-tests:
-          executor:
-            name: android/android-machine
-            resource-class: medium
-          wait-for-emulator: true
-          test-command: ./gradlew connectedCheck createDebugCoverageReport
-          system-image: system-images;android-28;default;x86
+#      - test
+      - build
+#      - android/run-ui-tests:
+#          executor:
+#            name: android/android-machine
+#            resource-class: medium
+#          wait-for-emulator: true
+#          test-command: ./gradlew connectedCheck createDebugCoverageReport
+#          system-image: system-images;android-28;default;x86
 
           
