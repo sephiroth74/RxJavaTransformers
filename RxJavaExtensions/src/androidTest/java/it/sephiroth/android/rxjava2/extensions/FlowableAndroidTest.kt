@@ -1,16 +1,17 @@
 package it.sephiroth.android.rxjava2.extensions
 
+import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import io.reactivex.BackpressureStrategy
-import io.reactivex.Flowable
 import io.reactivex.Observable
+import io.reactivex.subjects.BehaviorSubject
+import it.sephiroth.android.rxjava2.extensions.flowable.pong
 import it.sephiroth.android.rxjava2.extensions.flowable.skipBetween
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 
 
 /**
@@ -59,4 +60,39 @@ class FlowableAndroidTest {
 
         Assert.assertTrue(totalTime > 500)
     }
+
+    fun test02() {
+        val subject = BehaviorSubject.create<TestEvent>()
+
+        subject.retry()
+            .toFlowable(BackpressureStrategy.BUFFER)
+            .pong(TestEventImpl2::class.java, TestEventImpl4::class.java)
+            .doOnSubscribe {
+                System.out.println("[FlowableTest] OnSubscribe")
+            }
+            .doOnNext { it ->
+                System.out.println("[FlowableTest] onNext = $it")
+            }
+            .subscribe()
+
+
+        subject.onNext(TestEventImpl1())
+        subject.onNext(TestEventImpl2())
+        subject.onNext(TestEventImpl2())
+        subject.onNext(TestEventImpl3())
+        subject.onNext(TestEventImpl4())
+        subject.onNext(TestEventImpl4())
+        subject.onNext(TestEventImpl1())
+        subject.onNext(TestEventImpl2())
+        subject.onNext(TestEventImpl3())
+        subject.onNext(TestEventImpl4())
+        subject.onComplete()
+
+    }
+
+    interface TestEvent
+    class TestEventImpl1 : TestEvent
+    class TestEventImpl2 : TestEvent
+    class TestEventImpl3 : TestEvent
+    class TestEventImpl4 : TestEvent
 }

@@ -70,3 +70,67 @@ fun <T : Any> Flowable<T>.skipBetween(
         }
     }
 }
+
+/**
+ * Returns a Flowable that filter out those objects not of the type of [cls1] and [cls2].
+ * Moreover objects must alternate between cls1 and cls2, otherwise the object is skipped.
+ *
+ * For instance this code:
+ *
+ *             subject.retry()
+ *             .toFlowable(BackpressureStrategy.BUFFER)
+ *             .pong(TestEventImpl2::class.java, TestEventImpl4::class.java)
+ *               .doOnNext { it ->
+ *                   Log.v("FlowableTest", "onNext = $it")
+ *               }
+ *               .subscribe()
+ *               subject.onNext(TestEventImpl1())
+ *               subject.onNext(TestEventImpl2())
+ *               subject.onNext(TestEventImpl2())
+ *               subject.onNext(TestEventImpl3())
+ *               subject.onNext(TestEventImpl4())
+ *               subject.onNext(TestEventImpl4())
+ *               subject.onNext(TestEventImpl1())
+ *               subject.onNext(TestEventImpl2())
+ *               subject.onNext(TestEventImpl3())
+ *               subject.onNext(TestEventImpl4())
+ *
+ * It will only output the following:
+ *
+ *      FlowableTest: onNext = TestEventImpl2
+ *      FlowableTest: onNext = TestEventImpl4
+ *      FlowableTest: onNext = TestEventImpl2
+ *      FlowableTest: onNext = TestEventImpl4
+ */
+fun <T, E, R> Flowable<T>.pong(cls1: Class<E>, cls2: Class<R>): Flowable<T> where E : T, R : T {
+    var current: Class<*>? = null
+    return this.doOnSubscribe {
+        current = null
+    }.filter { t2: T ->
+        if (cls1.isInstance(t2) || cls2.isInstance(t2)) {
+            val t2Class = t2!!::class.java
+            val result = if (t2Class != cls1 && t2Class != cls2) {
+                true
+            } else {
+                if (null == current) {
+                    if (t2Class == cls2 || t2Class == cls1) {
+                        current = t2Class
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    if (current == t2Class) {
+                        false
+                    } else {
+                        current = t2Class
+                        true
+                    }
+                }
+            }
+            result
+        } else {
+            false
+        }
+    }
+}
