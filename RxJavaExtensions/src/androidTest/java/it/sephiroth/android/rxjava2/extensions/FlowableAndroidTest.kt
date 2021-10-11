@@ -7,13 +7,10 @@ import io.reactivex.BackpressureStrategy
 import io.reactivex.Observable
 import io.reactivex.subjects.BehaviorSubject
 import it.sephiroth.android.rxjava2.extensions.flowable.pingPong
-import it.sephiroth.android.rxjava2.extensions.flowable.pong
 import it.sephiroth.android.rxjava2.extensions.flowable.skipBetween
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.lang.IllegalArgumentException
-import java.lang.RuntimeException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
