@@ -6,7 +6,7 @@ import android.util.Log
 import io.reactivex.BackpressureStrategy
 import io.reactivex.subjects.BehaviorSubject
 import it.sephiroth.android.rxjava2.extensions.completable.delay
-import it.sephiroth.android.rxjava2.extensions.flowable.pong
+import it.sephiroth.android.rxjava2.extensions.flowable.pingPong
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
         Log.i("MainActivity", "doTest")
         subject.retry()
             .toFlowable(BackpressureStrategy.BUFFER)
-            .pong(TestEventImpl2::class.java, TestEventImpl4::class.java)
+            .pingPong(TestEventImpl2::class.java, TestEventImpl4::class.java)
             .doOnSubscribe {
                 Log.d("FlowableTest", "OnSubscribe")
             }

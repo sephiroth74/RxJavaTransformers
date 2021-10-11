@@ -79,7 +79,7 @@ fun <T : Any> Flowable<T>.skipBetween(
  *
  *             subject.retry()
  *             .toFlowable(BackpressureStrategy.BUFFER)
- *             .pong(TestEventImpl2::class.java, TestEventImpl4::class.java)
+ *             .pingPong(TestEventImpl2::class.java, TestEventImpl4::class.java)
  *               .doOnNext { it ->
  *                   Log.v("FlowableTest", "onNext = $it")
  *               }
@@ -102,7 +102,7 @@ fun <T : Any> Flowable<T>.skipBetween(
  *      FlowableTest: onNext = TestEventImpl2
  *      FlowableTest: onNext = TestEventImpl4
  */
-fun <T, E, R> Flowable<T>.pong(cls1: Class<E>, cls2: Class<R>): Flowable<T> where E : T, R : T {
+fun <T, E, R> Flowable<T>.pingPong(cls1: Class<E>, cls2: Class<R>): Flowable<T> where E : T, R : T {
     var current: Class<*>? = null
     return this.doOnSubscribe {
         current = null
