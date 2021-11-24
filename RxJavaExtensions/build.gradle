@@ -46,9 +46,14 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    lintOptions {
+        abortOnError false
+    }
+
     kotlinOptions {
         jvmTarget = '1.8'
     }
+
     namespace 'it.sephiroth.android.rxjava2.extensions'
 }
 
