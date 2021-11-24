@@ -1,12 +1,12 @@
 plugins {
     id 'com.android.library'
     id 'kotlin-android'
-    id "com.github.kt3k.coveralls"
+//    id "com.github.kt3k.coveralls"
 }
 
-coveralls {
-    jacocoReportPath 'build/reports/coverage/debug/report.xml'
-}
+//coveralls {
+//    jacocoReportPath 'build/reports/coverage/debug/report.xml'
+//}
 
 android {
     compileSdkVersion 31
@@ -29,7 +29,7 @@ android {
         }
 
         debug {
-            testCoverageEnabled true
+//            testCoverageEnabled true
         }
     }
 
