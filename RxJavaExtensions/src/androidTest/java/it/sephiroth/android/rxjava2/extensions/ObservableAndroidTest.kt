@@ -189,4 +189,60 @@ class ObservableAndroidTest {
 
         Assert.assertTrue(totalTime > 1000)
     }
+
+    @Test
+    fun test09() {
+        val latch = CountDownLatch(7)
+        val values = mutableListOf<Long>()
+        val now = System.currentTimeMillis()
+        var totalTime = now
+        count(0, 5, 1, TimeUnit.SECONDS,
+            { value ->
+                println("onNext(time=" + (System.currentTimeMillis() - now) + ", value=" + value + ")")
+                values.add(value)
+                latch.countDown()
+            },
+            {
+                println("onComplete(time=" + (System.currentTimeMillis() - now) + ")")
+                totalTime = System.currentTimeMillis()
+                latch.countDown()
+            })
+
+        latch.await(10, TimeUnit.SECONDS)
+
+        val timePassed = totalTime - now
+
+        Assert.assertTrue(values.size == 6)
+        Assert.assertEquals(listOf(0L, 1L, 2L, 3L, 4L, 5L), values)
+        Assert.assertTrue("$timePassed should be greater than 6000", timePassed >= 5000)
+        Assert.assertTrue("$timePassed should be less than 7000", timePassed < 6000)
+    }
+
+    @Test
+    fun test10() {
+        var latch = CountDownLatch(6)
+        var values = mutableListOf<Long>()
+        val now = System.currentTimeMillis()
+        var totalTime = now
+        count(5, 1, 1, TimeUnit.SECONDS,
+            { value ->
+                println("onNext(time=" + (System.currentTimeMillis() - now) + ", value=" + value + ")")
+                values.add(value)
+                latch.countDown()
+            },
+            {
+                println("onComplete(time=" + (System.currentTimeMillis() - now) + ")")
+                totalTime = System.currentTimeMillis()
+                latch.countDown()
+            })
+
+        latch.await(10, TimeUnit.SECONDS)
+
+        val timePassed = totalTime - now
+
+        Assert.assertTrue(values.size == 5)
+        Assert.assertEquals(listOf(5L, 4L, 3L, 2L, 1L), values)
+        Assert.assertTrue("$timePassed should be greater than 4000", timePassed >= 4000)
+        Assert.assertTrue("$timePassed should be less than 5000", timePassed < 5000)
+    }
 }

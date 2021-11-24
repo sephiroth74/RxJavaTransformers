@@ -10,11 +10,13 @@ import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.annotations.CheckReturnValue
 import io.reactivex.annotations.SchedulerSupport
+import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.Observables
 import io.reactivex.schedulers.Schedulers
 import it.sephiroth.android.rxjava2.extensions.MuteException
 import it.sephiroth.android.rxjava2.extensions.observers.AutoDisposableObserver
 import java.util.concurrent.TimeUnit
+import kotlin.math.absoluteValue
 
 
 /**
@@ -125,6 +127,39 @@ fun <T> Observable<T>.muteUntil(delay: Long, unit: TimeUnit, func: () -> Boolean
             }
         }
 }
+
+fun count(
+    start: Long,
+    end: Long,
+    step: Long,
+    unit: TimeUnit,
+    onTick: ((Long) -> Unit),
+    onComplete: (() -> Unit)?
+): Disposable {
+    require(start != end) { "start != end required but it was $start, $end" }
+    require(step <= (end - start).absoluteValue) { "step is bigger than the time span" }
+    val reversed = start > end
+    val beginning = if (reversed) end else start
+    val ending = (if (reversed) start else end) + 1
+    val total = ending - beginning
+
+    return Observable.intervalRange(0, total, 0L, 1, unit)
+        .doOnNext { }
+        .filter { value ->
+            value % step == 0L || value == ending
+        }
+        .map { value ->
+            if (reversed) start - value else value
+        }.subscribe(
+            { value ->
+                onTick.invoke(value)
+
+                val completed = value == end
+                if (completed) onComplete?.invoke()
+            },
+            { /** empty **/ })
+}
+
 
 fun <T> Observable<T>.debug(tag: String): Observable<T> {
     return this
