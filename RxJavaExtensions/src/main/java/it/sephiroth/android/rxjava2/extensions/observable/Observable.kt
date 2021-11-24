@@ -128,7 +128,8 @@ fun <T> Observable<T>.muteUntil(delay: Long, unit: TimeUnit, func: () -> Boolean
         }
 }
 
-fun count(
+
+fun countDown(
     start: Long,
     end: Long,
     step: Long,
@@ -144,13 +145,14 @@ fun count(
     val total = ending - beginning
 
     return Observable.intervalRange(0, total, 0L, 1, unit)
-        .doOnNext { }
         .filter { value ->
             value % step == 0L || value == ending
         }
         .map { value ->
             if (reversed) start - value else value
-        }.subscribe(
+        }
+        .observeMain()
+        .subscribe(
             { value ->
                 onTick.invoke(value)
 
