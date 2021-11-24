@@ -196,7 +196,7 @@ class ObservableAndroidTest {
         val values = mutableListOf<Long>()
         val now = System.currentTimeMillis()
         var totalTime = now
-        countDown(0, 5, 1, TimeUnit.SECONDS,
+        ObservableUtils.countDown(0, 5, 1, TimeUnit.SECONDS,
             { value ->
                 println("onNext(time=" + (System.currentTimeMillis() - now) + ", value=" + value + ")")
                 values.add(value)
@@ -224,7 +224,7 @@ class ObservableAndroidTest {
         var values = mutableListOf<Long>()
         val now = System.currentTimeMillis()
         var totalTime = now
-        countDown(5, 1, 1, TimeUnit.SECONDS,
+        ObservableUtils.countDown(5, 1, 1, TimeUnit.SECONDS,
             { value ->
                 println("onNext(time=" + (System.currentTimeMillis() - now) + ", value=" + value + ")")
                 values.add(value)
