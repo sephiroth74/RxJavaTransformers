@@ -4,6 +4,7 @@ import io.reactivex.Observable
 import io.reactivex.disposables.Disposable
 import java.util.concurrent.TimeUnit
 import kotlin.math.absoluteValue
+import kotlin.math.ceil
 
 
 /**
@@ -12,6 +13,44 @@ import kotlin.math.absoluteValue
  * @author Alessandro Crugnola on 24.11.21 - 13:56
  */
 object ObservableUtils {
+
+    /**
+     * Starts a timer which will count up to [end] (converted to [endUnit]), and producing
+     * a tick interval every [step] (converted to [stepUnit]).
+     *
+     * For instance `(timer, 1, TimeUnit.SECONDS, 10, TimeUnit.MILLISECONDS)` will invoke a timer
+     * interval 100 times, every 10 milliseconds.
+     *
+     */
+    fun timer(
+        end: Long,
+        endUnit: TimeUnit,
+        step: Long,
+        stepUnit: TimeUnit,
+        onTick: ((Long, Long) -> Unit)?,
+        onComplete: (() -> Unit)?
+    ): Disposable {
+        val endTime = stepUnit.convert(end, endUnit)
+        require(endTime > step) { "step time must be < than end time" }
+        val totalSteps = ceil((endTime.toDouble()) / step).toLong()
+
+        return Observable
+            .interval(step, stepUnit).take(totalSteps)
+            .observeMain()
+            .subscribe(
+                {
+                    // onNext
+                    val currentStep = it + 1
+                    val time = currentStep * step
+                    onTick?.invoke(currentStep, time)
+                },
+                { // onError
+                },
+                {
+                    // onComplete
+                    onComplete?.invoke()
+                })
+    }
 
     /**
      * Starts a timer which will be report to [onTick] listener on each timer tick. <br />
@@ -31,7 +70,7 @@ object ObservableUtils {
         end: Long,
         step: Long,
         unit: TimeUnit,
-        onTick: ((Long) -> Unit),
+        onTick: ((Long) -> Unit)?,
         onComplete: (() -> Unit)?
     ): Disposable {
         require(start != end) { "start != end required but it was $start, $end" }
@@ -51,7 +90,7 @@ object ObservableUtils {
             .observeMain()
             .subscribe(
                 { value ->
-                    onTick.invoke(value)
+                    onTick?.invoke(value)
 
                     val completed = value == end
                     if (completed) onComplete?.invoke()

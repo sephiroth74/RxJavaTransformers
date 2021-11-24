@@ -245,4 +245,30 @@ class ObservableAndroidTest {
         Assert.assertTrue("$timePassed should be greater than 4000", timePassed >= 4000)
         Assert.assertTrue("$timePassed should be less than 5000", timePassed < 5000)
     }
+
+    @Test
+    fun test11() {
+        val now = System.currentTimeMillis()
+        val latch = CountDownLatch(100)
+        val values = mutableListOf<Long>()
+        ObservableUtils.timer(
+            1,
+            TimeUnit.SECONDS,
+            10,
+            TimeUnit.MILLISECONDS,
+            onTick = { step, stepValue ->
+                values.add(step)
+                latch.countDown()
+
+            }, null
+        )
+
+        latch.await(2, TimeUnit.SECONDS)
+        val end = System.currentTimeMillis()
+
+        Assert.assertTrue(values.size == 100)
+        Assert.assertEquals(LongRange(1, 100).toList(), values)
+        Assert.assertTrue(end - now >= 1000)
+        Assert.assertTrue(end - now < 2000)
+    }
 }
