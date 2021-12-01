@@ -1,8 +1,11 @@
 package it.sephiroth.android.rxjava2.extensions.observable
 
 import io.reactivex.Observable
+import io.reactivex.ObservableSource
+import io.reactivex.Scheduler
 import io.reactivex.disposables.Disposable
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.absoluteValue
 import kotlin.math.ceil
 
@@ -96,5 +99,50 @@ object ObservableUtils {
                     if (completed) onComplete?.invoke()
                 },
                 { /** empty **/ })
+    }
+
+    /**
+     * Creates a pausable Observable which observes the items emitted from the [paused] source
+     * to internally pause the emission of the resulting observable
+     */
+    @JvmStatic
+    fun pausedTimer(delay: Long, unit: TimeUnit, paused: ObservableSource<Boolean>): Observable<Long> {
+        return pausedInterval(delay, unit, paused).take(1)
+    }
+
+    @JvmStatic
+    fun pausedTimer(delay: Long, unit: TimeUnit, paused: ObservableSource<Boolean>, scheduler: Scheduler): Observable<Long> {
+        return pausedInterval(delay, unit, paused, scheduler).take(1)
+    }
+
+    /**
+     * Returns a pausable [Observable.interval] which emits the value emitted by the source
+     * Observable.interval while the [paused] observable has no value or emits true.
+     */
+    @JvmStatic
+    fun pausedInterval(
+        delay: Long,
+        unit: TimeUnit,
+        paused: ObservableSource<Boolean>,
+    ): Observable<Long> {
+        val elapsedTime = AtomicLong()
+        return Observable.interval(delay, unit)
+            .withLatestFrom(paused) { _, t2 -> !t2 }
+            .filter { it }
+            .map { elapsedTime.addAndGet(unit.toMillis(delay)) }
+    }
+
+    @JvmStatic
+    fun pausedInterval(
+        delay: Long,
+        unit: TimeUnit,
+        paused: ObservableSource<Boolean>,
+        scheduler: Scheduler
+    ): Observable<Long> {
+        val elapsedTime = AtomicLong()
+        return Observable.interval(delay, unit, scheduler)
+            .withLatestFrom(paused) { _, t2 -> !t2 }
+            .filter { it }
+            .map { elapsedTime.addAndGet(unit.toMillis(delay)) }
     }
 }
