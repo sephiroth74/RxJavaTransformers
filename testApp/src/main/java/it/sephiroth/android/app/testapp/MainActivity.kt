@@ -5,21 +5,23 @@ import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import io.reactivex.Observable
+import io.reactivex.disposables.Disposable
+import io.reactivex.disposables.Disposables
 import io.reactivex.subjects.BehaviorSubject
-import it.sephiroth.android.rxjava2.extensions.flowable.observeMain
 import it.sephiroth.android.rxjava2.extensions.observable.ObservableUtils
 import it.sephiroth.android.rxjava2.extensions.observable.autoSubscribe
 import it.sephiroth.android.rxjava2.extensions.observable.observeMain
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
 class MainActivity : AppCompatActivity() {
 
-    val subject = BehaviorSubject.create<TestEvent>()
-    val pauseSubject = BehaviorSubject.createDefault(false)
+    private var disposable: Disposable = Disposables.disposed()
+    private val pauseSubject: BehaviorSubject<Boolean> = BehaviorSubject.createDefault(false)
 
     lateinit var textView: TextView
     lateinit var pauseButton: Button
-    lateinit var resumeButton: Button
     lateinit var startButton: Button
 
     var startTime = System.currentTimeMillis()
@@ -37,20 +39,23 @@ class MainActivity : AppCompatActivity() {
         textView = findViewById(R.id.textView)
         startButton = findViewById(R.id.button0)
         pauseButton = findViewById(R.id.button1)
-        resumeButton = findViewById(R.id.button2)
 
         pauseButton.setOnClickListener {
-            Log.v(TAG, "paused")
-            pauseSubject.onNext(true)
+            if (pauseSubject.value == true)
+                Log.v(TAG, "resumed")
+            else
+                Log.v(TAG, "paused")
+            pauseSubject.onNext(!pauseSubject.value!!)
         }
-        resumeButton.setOnClickListener {
-            Log.v(TAG, "resumed [${tick()}]")
-            pauseSubject.onNext(false)
+
+        pauseSubject.observeMain().autoSubscribe {
+            doOnNext {
+                if (it) pauseButton.text = "Resume" else pauseButton.text = "Pause"
+            }
         }
+
         startButton.setOnClickListener { doTest() }
     }
-
-    private fun elapsed() = System.currentTimeMillis() - startTime
 
     private fun tick(): Long {
         val elapsed = System.currentTimeMillis() - tickTime
@@ -59,6 +64,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun doTest() {
+        disposable.dispose()
+        pauseSubject.onNext(false)
+
         startTime = System.currentTimeMillis()
         tickTime = startTime
 
@@ -66,27 +74,24 @@ class MainActivity : AppCompatActivity() {
 
         textView.text = "Started at $startTime"
 
-        ObservableUtils.pausedInterval(3, TimeUnit.SECONDS, pauseSubject)
+
+        disposable = ObservableUtils.pausedTimer(10, TimeUnit.SECONDS, pauseSubject)
             .observeMain()
             .autoSubscribe {
 
                 doOnNext {
-                    val currentTime = System.currentTimeMillis()
-                    val tick = tick()
-                    Log.d(TAG, "onNext value=$it, startTime=$startTime, tick=${tick}")
-                    textView.setText("[onNext] Value=$it, tickTime=${tick}, elapsed=${elapsed()}")
+                    val tickValue = tick()
+                    Log.d(TAG, "[onnext] = $tickValue")
+                    textView.text = "Next. elapsed = $tickValue"
+
                 }
 
                 doOnComplete {
-                    Log.d(TAG, "[onComplete] tickTime=${tick()}, elapsed=${elapsed()}")
+                    Log.d(TAG, "[completed]")
+                    pauseSubject.onNext(false)
                 }
             }
-    }
 
-    abstract class TestEvent {
-        override fun toString(): String {
-            return this::class.java.simpleName
-        }
     }
 
     companion object {

@@ -102,17 +102,38 @@ object ObservableUtils {
     }
 
     /**
-     * Creates a pausable Observable which observes the items emitted from the [paused] source
+     * Creates a pausable Observable which observes the items emitted from the [pausedSource] source
      * to internally pause the emission of the resulting observable
      */
     @JvmStatic
-    fun pausedTimer(delay: Long, unit: TimeUnit, paused: ObservableSource<Boolean>): Observable<Long> {
-        return pausedInterval(delay, unit, paused).take(1)
-    }
+    fun pausedTimer(delay: Long, unit: TimeUnit, pausedSource: Observable<Boolean>): Observable<Long> {
 
-    @JvmStatic
-    fun pausedTimer(delay: Long, unit: TimeUnit, paused: ObservableSource<Boolean>, scheduler: Scheduler): Observable<Long> {
-        return pausedInterval(delay, unit, paused, scheduler).take(1)
+        val startTime = AtomicLong()
+        val elapsedTime = AtomicLong()
+        val delayTime = AtomicLong(unit.toMillis(delay))
+
+        return pausedSource.doOnSubscribe {
+            startTime.set(System.currentTimeMillis())
+            elapsedTime.set(unit.toMillis(delay))
+        }
+            .distinctUntilChanged()
+            .takeWhile { elapsedTime.get() > 0 }
+            .switchMap { paused ->
+                val now = System.currentTimeMillis()
+                if (!paused) {
+                    // resumed
+                    startTime.set(now)
+                    return@switchMap Observable.timer(elapsedTime.get(), TimeUnit.MILLISECONDS)
+                } else {
+                    // paused
+                    val elapsed = now - startTime.get()
+                    val newDelay = delayTime.get() - elapsed
+                    delayTime.set(newDelay)
+                    elapsedTime.set(newDelay)
+                    startTime.set(now)
+                    return@switchMap Observable.never()
+                }
+            }.map { System.currentTimeMillis() }.take(1)
     }
 
     /**
