@@ -134,3 +134,7 @@ fun <T, E, R> Flowable<T>.pingPong(cls1: Class<E>, cls2: Class<R>): Flowable<T> 
         }
     }
 }
+
+fun <T> Flowable<T>.prioritize(): PrioritizedFlowable<T> {
+    return PrioritizedFlowable(this)
+}

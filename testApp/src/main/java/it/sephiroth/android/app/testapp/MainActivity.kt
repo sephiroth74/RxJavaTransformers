@@ -1,24 +1,24 @@
 package it.sephiroth.android.app.testapp
 
 import android.os.Bundle
-import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import io.reactivex.Observable
+import io.reactivex.Flowable
+import io.reactivex.Observer
 import io.reactivex.disposables.Disposable
 import io.reactivex.disposables.Disposables
+import io.reactivex.processors.PublishProcessor
 import io.reactivex.subjects.BehaviorSubject
-import it.sephiroth.android.rxjava2.extensions.observable.ObservableUtils
-import it.sephiroth.android.rxjava2.extensions.observable.autoSubscribe
-import it.sephiroth.android.rxjava2.extensions.observable.observeMain
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicLong
+import it.sephiroth.android.rxjava2.extensions.flowable.prioritize
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
+import timber.log.Timber
 
 class MainActivity : AppCompatActivity() {
 
     private var disposable: Disposable = Disposables.disposed()
-    private val pauseSubject: BehaviorSubject<Boolean> = BehaviorSubject.createDefault(false)
+    private val pauseSubject = BehaviorSubject.createDefault(false).toSerialized()
 
     lateinit var textView: TextView
     lateinit var pauseButton: Button
@@ -28,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     var tickTime = System.currentTimeMillis()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Timber.plant(Timber.DebugTree())
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -40,58 +41,83 @@ class MainActivity : AppCompatActivity() {
         startButton = findViewById(R.id.button0)
         pauseButton = findViewById(R.id.button1)
 
+        startButton.setOnClickListener {
+            Timber.i("onClick(start)")
+            doTest()
+        }
+
         pauseButton.setOnClickListener {
-            if (pauseSubject.value == true)
-                Log.v(TAG, "resumed")
-            else
-                Log.v(TAG, "paused")
-            pauseSubject.onNext(!pauseSubject.value!!)
+            Timber.i("onClick(pause)")
+            Runtime.getRuntime().gc()
         }
-
-        pauseSubject.observeMain().autoSubscribe {
-            doOnNext {
-                if (it) pauseButton.text = "Resume" else pauseButton.text = "Pause"
-            }
-        }
-
-        startButton.setOnClickListener { doTest() }
     }
 
-    private fun tick(): Long {
-        val elapsed = System.currentTimeMillis() - tickTime
-        tickTime = System.currentTimeMillis()
-        return elapsed
-    }
 
     private fun doTest() {
-        disposable.dispose()
-        pauseSubject.onNext(false)
+        Timber.v("starting test")
 
-        startTime = System.currentTimeMillis()
-        tickTime = startTime
+        val subject: Flowable<Boolean> = PublishProcessor.create<Boolean>().toSerialized().onBackpressureBuffer()
+        val prioritized = subject.prioritize()
 
-        Log.d(TAG, "[onStart] startTime=$startTime")
+        val s10 = prioritized.prioritySubscribe(10, MySubscriber(10))
+        val s5 = prioritized.prioritySubscribe(6, MySubscriber(6))
+        val s1 = prioritized.prioritySubscribe(6, MySubscriber(6))
+        val s0 = prioritized.prioritySubscribe(0, MySubscriber(0))
+        val s8 = prioritized.prioritySubscribe(8, MySubscriber(8))
+        val s11 = prioritized.prioritySubscribe(11, MySubscriber(11))
+        prioritized.subscribe(MySubscriber(12))
 
-        textView.text = "Started at $startTime"
+        prioritized.onNext(true)
+        s1.dispose()
+        s0.dispose()
+        s8.dispose()
+        val sNeg = prioritized.prioritySubscribe(-1, MySubscriber(-1))
+        prioritized.onNext(false)
 
+        sNeg.dispose()
+        s11.dispose()
+        s5.dispose()
+        s10.dispose()
+    }
 
-        disposable = ObservableUtils.pausedTimer(10, TimeUnit.SECONDS, pauseSubject)
-            .observeMain()
-            .autoSubscribe {
+    class MyObserver(val priority: Int) : Observer<Boolean> {
+        override fun onComplete() {
+            Timber.d("[${priority}] onComplete()")
+        }
 
-                doOnNext {
-                    val tickValue = tick()
-                    Log.d(TAG, "[onnext] = $tickValue")
-                    textView.text = "Next. elapsed = $tickValue"
+        override fun onError(e: Throwable) {
+            Timber.d("[${priority}] onError($e)")
+        }
 
-                }
+        override fun onNext(t: Boolean) {
+            Timber.d("[${priority}] onNext($t)")
+        }
 
-                doOnComplete {
-                    Log.d(TAG, "[completed]")
-                    pauseSubject.onNext(false)
-                }
-            }
+        override fun onSubscribe(d: Disposable) {
+            Timber.v("[${priority}] onSubscribe()")
+        }
+    }
 
+    class MySubscriber(val priority: Int) : Subscriber<Boolean> {
+        override fun onComplete() {
+            Timber.d("[${priority}] onComplete()")
+        }
+
+        override fun onError(e: Throwable) {
+            Timber.d("[${priority}] onError($e)")
+        }
+
+        override fun onNext(t: Boolean) {
+            Timber.d("[${priority}] onNext($t)")
+        }
+
+        override fun onSubscribe(s: Subscription?) {
+            Timber.v("[${priority}] onSubscribe($s)")
+        }
+
+        protected fun finalize() {
+            Timber.d("[${priority}] finalize()")
+        }
     }
 
     companion object {

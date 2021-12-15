@@ -144,3 +144,6 @@ fun <T> Observable<T>.debugWithThread(tag: String): Observable<T> {
         .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
 }
 
+fun <T> Observable<T>.prioritize(): PrioritizedObservable<T> {
+    return PrioritizedObservable(this)
+}
