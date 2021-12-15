@@ -3,6 +3,7 @@ package it.sephiroth.android.rxjava2.extensions.observable
 import io.reactivex.Observable
 import io.reactivex.Observer
 import io.reactivex.disposables.Disposable
+import io.reactivex.functions.Consumer
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
 
@@ -42,6 +43,10 @@ class PrioritizedObservable<T>(s: Observable<T>) : Observable<T>(), Observer<T> 
         router.forEach { it.second.onComplete() }
     }
 
+
+    @Suppress("unused")
+    fun prioritySubscribe(consumer: Consumer<in T>) = prioritySubscribe(PRIORITY_DEFAULT.value, consumer)
+
     fun prioritySubscribe(observer: Observer<in T>) = prioritySubscribe(PRIORITY_DEFAULT.value, observer)
 
     fun prioritySubscribe(priority: Int, obs: Observer<in T>): Disposable {
@@ -55,7 +60,29 @@ class PrioritizedObservable<T>(s: Observable<T>) : Observable<T>(), Observer<T> 
         val entry = Pair(priority, subject)
         router.add(entry)
         router.sortBy { it.first }
-        intermediary.subscribe(obs)
+        //intermediary.subscribe(obs)
+
+        return object : Disposable {
+            override fun dispose() {
+                disposable.dispose()
+                router.remove(entry)
+            }
+
+            override fun isDisposed(): Boolean {
+                return disposable.isDisposed
+            }
+        }
+    }
+
+
+    fun prioritySubscribe(priority: Int, consumer: Consumer<in T>): Disposable {
+        val subject = PublishSubject.create<T>().toSerialized()
+        val disposable = subject.subscribe(consumer)
+
+        val entry = Pair(priority, subject)
+        router.add(entry)
+        router.sortBy { it.first }
+        //intermediary.subscribe(obs)
 
         return object : Disposable {
             override fun dispose() {

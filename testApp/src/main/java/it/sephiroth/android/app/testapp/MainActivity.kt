@@ -8,9 +8,12 @@ import io.reactivex.Flowable
 import io.reactivex.Observer
 import io.reactivex.disposables.Disposable
 import io.reactivex.disposables.Disposables
+import io.reactivex.functions.Consumer
 import io.reactivex.processors.PublishProcessor
 import io.reactivex.subjects.BehaviorSubject
+import it.sephiroth.android.rxjava2.extensions.flowable.PrioritizedFlowable
 import it.sephiroth.android.rxjava2.extensions.flowable.prioritize
+import it.sephiroth.android.rxjava2.extensions.observable.PrioritizedObservable
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 import timber.log.Timber
@@ -56,31 +59,23 @@ class MainActivity : AppCompatActivity() {
     private fun doTest() {
         Timber.v("starting test")
 
-        val subject: Flowable<Boolean> = PublishProcessor.create<Boolean>().toSerialized().onBackpressureBuffer()
-        val prioritized = subject.prioritize()
+        val prioritized: PrioritizedFlowable<Boolean> = PublishProcessor.create<Boolean>().toSerialized().onBackpressureBuffer().retry().prioritize()
 
-        val s10 = prioritized.prioritySubscribe(10, MySubscriber(10))
-        val s5 = prioritized.prioritySubscribe(6, MySubscriber(6))
-        val s1 = prioritized.prioritySubscribe(6, MySubscriber(6))
-        val s0 = prioritized.prioritySubscribe(0, MySubscriber(0))
-        val s8 = prioritized.prioritySubscribe(8, MySubscriber(8))
-        val s11 = prioritized.prioritySubscribe(11, MySubscriber(11))
-        prioritized.subscribe(MySubscriber(12))
+        prioritized.prioritySubscribe(1) { Timber.d("Consumer::onNext(1)") }
+        prioritized.prioritySubscribe(10) { Timber.d("Consumer::onNext(10)") }
+        val s5 = prioritized.prioritySubscribe(5) { Timber.d("Consumer::onNext(5)") }
 
         prioritized.onNext(true)
-        s1.dispose()
-        s0.dispose()
-        s8.dispose()
-        val sNeg = prioritized.prioritySubscribe(-1, MySubscriber(-1))
-        prioritized.onNext(false)
 
-        sNeg.dispose()
-        s11.dispose()
+        Timber.i("Adding new")
         s5.dispose()
-        s10.dispose()
+
+        prioritized.prioritySubscribe(0) { Timber.d("Consumer::onNext(0)") }
+
+        prioritized.onNext(false)
     }
 
-    class MyObserver(val priority: Int) : Observer<Boolean> {
+    class MyObserver(private val priority: Int) : Observer<Boolean> {
         override fun onComplete() {
             Timber.d("[${priority}] onComplete()")
         }
@@ -98,7 +93,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    class MySubscriber(val priority: Int) : Subscriber<Boolean> {
+    class MySubscriber(private val priority: Int) : Subscriber<Boolean> {
         override fun onComplete() {
             Timber.d("[${priority}] onComplete()")
         }
