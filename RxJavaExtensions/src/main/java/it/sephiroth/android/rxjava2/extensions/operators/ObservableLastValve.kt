@@ -29,7 +29,7 @@ class ObservableLastValve<T>(
     private val other: ObservableSource<Boolean>,
     private val defaultOpen: Boolean
 ) : Observable<T>(), ObservableTransformer<T, T> {
-    lateinit var source: Observable<out T>
+    private lateinit var source: Observable<out T>
 
     constructor(
         source: Observable<out T>,
@@ -101,7 +101,7 @@ class ObservableLastValve<T>(
             DisposableHelper.dispose(other)
         }
 
-        fun drain() {
+        private fun drain() {
             val value = semaphore.getAndIncrement()
             if (value != 0) {
                 return
