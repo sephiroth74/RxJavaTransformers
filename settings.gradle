@@ -1,2 +1,2 @@
 include ':RxJavaExtensions'
-//include ':testApp'
+include ':testApp'

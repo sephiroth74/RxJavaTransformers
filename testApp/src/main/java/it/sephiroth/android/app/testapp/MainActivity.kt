@@ -4,24 +4,13 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import io.reactivex.Flowable
-import io.reactivex.Observer
-import io.reactivex.disposables.Disposable
-import io.reactivex.disposables.Disposables
-import io.reactivex.functions.Consumer
-import io.reactivex.processors.PublishProcessor
-import io.reactivex.subjects.BehaviorSubject
-import it.sephiroth.android.rxjava2.extensions.flowable.PrioritizedFlowable
-import it.sephiroth.android.rxjava2.extensions.flowable.prioritize
-import it.sephiroth.android.rxjava2.extensions.observable.PrioritizedObservable
+import io.reactivex.rxjava3.core.Observer
+import io.reactivex.rxjava3.disposables.Disposable
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 import timber.log.Timber
 
 class MainActivity : AppCompatActivity() {
-
-    private var disposable: Disposable = Disposables.disposed()
-    private val pauseSubject = BehaviorSubject.createDefault(false).toSerialized()
 
     lateinit var textView: TextView
     lateinit var pauseButton: Button
@@ -58,21 +47,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun doTest() {
         Timber.v("starting test")
-
-        val prioritized: PrioritizedFlowable<Boolean> = PublishProcessor.create<Boolean>().toSerialized().onBackpressureBuffer().retry().prioritize()
-
-        prioritized.prioritySubscribe(1) { Timber.d("Consumer::onNext(1)") }
-        prioritized.prioritySubscribe(10) { Timber.d("Consumer::onNext(10)") }
-        val s5 = prioritized.prioritySubscribe(5) { Timber.d("Consumer::onNext(5)") }
-
-        prioritized.onNext(true)
-
-        Timber.i("Adding new")
-        s5.dispose()
-
-        prioritized.prioritySubscribe(0) { Timber.d("Consumer::onNext(0)") }
-
-        prioritized.onNext(false)
     }
 
     class MyObserver(private val priority: Int) : Observer<Boolean> {
