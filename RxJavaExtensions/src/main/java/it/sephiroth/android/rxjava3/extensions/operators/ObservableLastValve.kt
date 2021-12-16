@@ -10,7 +10,6 @@ import io.reactivex.rxjava3.core.Observer
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.internal.disposables.DisposableHelper
 import io.reactivex.rxjava3.internal.util.AtomicThrowable
-import io.reactivex.rxjava3.plugins.RxJavaPlugins
 import java.io.Serializable
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -54,10 +53,10 @@ class ObservableLastValve<T>(
         private val downstream: Observer<in T>,
         defaultOpen: Boolean
     ) : Observer<T>, Disposable, Serializable where T : Any {
-        private val upstream: AtomicReference<Disposable> = AtomicReference()
+        private val queue: AtomicReference<T> = AtomicReference()
         internal val other: OtherSubscriber = OtherSubscriber()
         private val error: AtomicThrowable = AtomicThrowable()
-        private val queue: AtomicReference<T> = AtomicReference()
+        private val upstream: AtomicReference<Disposable> = AtomicReference()
         private val semaphore = AtomicInteger()
 
         @Volatile
@@ -79,10 +78,8 @@ class ObservableLastValve<T>(
         }
 
         override fun onError(t: Throwable) {
-            if (error.tryAddThrowable(t)) {
+            if (error.tryAddThrowableOrReport(t)) {
                 drain()
-            } else {
-                RxJavaPlugins.onError(t)
             }
         }
 
@@ -99,17 +96,17 @@ class ObservableLastValve<T>(
             cancelled = true
             DisposableHelper.dispose(upstream)
             DisposableHelper.dispose(other)
+            error.tryTerminateAndReport()
         }
 
         private fun drain() {
-            val value = semaphore.getAndIncrement()
-            if (value != 0) {
+            if (semaphore.getAndIncrement() != 0) {
                 return
             }
             var missed = 1
-            val q = queue
-            val a = downstream
-            val error = error
+            val q = this.queue
+            val a = this.downstream
+            val error = this.error
             do {
                 while (true) {
                     if (cancelled) {
@@ -117,11 +114,10 @@ class ObservableLastValve<T>(
                         return
                     }
                     if (error.get() != null) {
-                        val ex = error.terminate()
                         q.set(null)
                         DisposableHelper.dispose(upstream)
                         DisposableHelper.dispose(other)
-                        a.onError(ex)
+                        error.tryTerminateConsumer(a)
                         return
                     }
                     if (!gate) {

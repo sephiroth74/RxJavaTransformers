@@ -1,11 +1,10 @@
 @file:Suppress("unused")
 
-package it.sephiroth.android.rxjava3.extensions.observabletransformers
+package it.sephiroth.android.rxjava3.extensions.operators
 
 import io.reactivex.rxjava3.annotations.SchedulerSupport
 import io.reactivex.rxjava3.core.ObservableSource
 import io.reactivex.rxjava3.core.ObservableTransformer
-import it.sephiroth.android.rxjava3.extensions.operators.ObservableLastValve
 import java.util.*
 
 
