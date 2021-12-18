@@ -6,6 +6,9 @@ package it.sephiroth.android.rxjava3.extensions.flowable
 import android.util.Log
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Flowable
+import it.sephiroth.android.rxjava3.extensions.observable.autoSubscribe
+import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
+import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSubscriber
 import java.util.concurrent.TimeUnit
 
 /**
@@ -13,6 +16,23 @@ import java.util.concurrent.TimeUnit
  *
  * @author Alessandro Crugnola on 06.01.21 - 13:31
  */
+
+
+/**
+ * Subscribe the source using an instance of the [AutoDisposableObserver].
+ * The source will be disposed when a complete or error event is received.
+ */
+fun <T> Flowable<T>.autoSubscribe(observer: AutoDisposableSubscriber<T>): AutoDisposableSubscriber<T> where T : Any {
+    return this.subscribeWith(observer)
+}
+
+/**
+ * @see [autoSubscribe]
+ */
+fun <T> Flowable<T>.autoSubscribe(builder: (AutoDisposableSubscriber<T>.() -> Unit)): AutoDisposableSubscriber<T> where T : Any {
+    return this.subscribeWith(AutoDisposableSubscriber(builder))
+}
+
 
 fun <T> Flowable<T>.debug(tag: String): Flowable<T> where T : Any {
     return this
@@ -52,12 +72,12 @@ fun <T> Flowable<T>.observeMain(): Flowable<T> where T : Any {
  * @param defaultOpened if true the very first emission of the source [Flowable] will be allowed, false otherwise
  *
  */
+@Deprecated("use debounce instead")
 fun <T : Any> Flowable<T>.skipBetween(
     time: Long,
     unit: TimeUnit,
     defaultOpened: Boolean = true
 ): Flowable<T> {
-
     var t: Long = if (defaultOpened) 0 else System.currentTimeMillis()
     return this.filter {
         val waitTime = unit.toMillis(time)
