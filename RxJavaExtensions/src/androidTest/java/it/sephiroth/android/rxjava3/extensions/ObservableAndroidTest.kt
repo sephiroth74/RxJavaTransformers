@@ -271,4 +271,22 @@ class ObservableAndroidTest {
         Assert.assertTrue(end - now >= 1000)
         Assert.assertTrue(end - now < 2000)
     }
+
+    @Test
+    fun test12() {
+        Observable
+            .just(1, 2, 3, 4, 5, 6, 7)
+            .mapNotNull { it ->
+                if (it % 2 == 0) it
+                else null
+            }.test().assertValues(2, 4, 6)
+
+        Observable
+            .just(1, 2, 3, 4, 5, 6)
+            .mapNotNull { null }
+            .test()
+            .assertNoValues()
+            .assertComplete()
+
+    }
 }

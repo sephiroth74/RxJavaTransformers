@@ -12,9 +12,12 @@ import io.reactivex.rxjava3.core.Scheduler
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.functions.Function
 import io.reactivex.rxjava3.kotlin.Observables
+import io.reactivex.rxjava3.plugins.RxJavaPlugins
 import io.reactivex.rxjava3.schedulers.Schedulers
 import it.sephiroth.android.rxjava3.extensions.MuteException
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
+import it.sephiroth.android.rxjava3.extensions.operators.ObservableMapNotNull
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 
@@ -125,6 +128,23 @@ fun <T> Observable<T>.muteUntil(delay: Long, unit: TimeUnit, func: () -> Boolean
                 else Observable.error(error)
             }
         }
+}
+
+/**
+ * Similar to mapNotNull of RxJava2.
+ * Map the elements of the upstream Observable using the [mapper] function and
+ * returns only those elements not null.
+ * If all the elements returned by the mapper function are null, the upstream observable
+ * will fire onComplete.
+ *
+ * @since 3.0.3
+ *
+ */
+@CheckReturnValue
+@SchedulerSupport(SchedulerSupport.NONE)
+fun <T, R> Observable<T>.mapNotNull(mapper: Function<in T, R?>): Observable<R> where T : Any, R : Any {
+    Objects.requireNonNull(mapper, "mapper is null")
+    return RxJavaPlugins.onAssembly(ObservableMapNotNull(this, mapper))
 }
 
 fun <T> Observable<T>.debug(tag: String): Observable<T> where T : Any {
