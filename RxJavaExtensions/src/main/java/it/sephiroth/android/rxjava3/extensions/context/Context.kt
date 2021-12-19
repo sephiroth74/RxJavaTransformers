@@ -33,9 +33,7 @@ fun Context.observeBroadcasts(vararg action: String): Observable<Intent> {
 @Suppress("TooGenericExceptionCaught")
 fun Context.observeBroadcasts(intentFilter: IntentFilter): Observable<Intent> {
     val observable = Observable.create<Intent> { observer ->
-
         var receiver: BroadcastReceiverObserver? = BroadcastReceiverObserver(observer)
-
         observer.setDisposable(Disposable.fromRunnable {
             receiver?.let {
                 try {
@@ -45,11 +43,7 @@ fun Context.observeBroadcasts(intentFilter: IntentFilter): Observable<Intent> {
                 }; receiver = null
             }
         })
-
         registerReceiver(receiver, intentFilter)
     }
-
     return observable
-        .subscribeOn(AndroidSchedulers.mainThread())
-        .observeOn(AndroidSchedulers.mainThread())
 }
