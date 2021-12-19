@@ -28,6 +28,7 @@ class SingleAndroidTest {
     @Test
     fun test01() {
         Single.just(listOf(1, 2, 3, 4, 5)).firstInList().test().await().assertValue(1)
+        Single.just(emptyList<Int>()).firstInList().test().await().assertNoValues().assertComplete()
     }
 
     @Test
@@ -129,6 +130,5 @@ class SingleAndroidTest {
 
         latch.await()
         Assert.assertEquals(listOf("start"), r1)
-
     }
 }
