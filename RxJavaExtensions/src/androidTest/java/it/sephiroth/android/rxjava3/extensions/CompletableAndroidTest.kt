@@ -94,18 +94,22 @@ class CompletableAndroidTest {
 
     @Test
     fun test06() {
-        Completable.fromAction { }
-            .debug("myCompletable")
-            .test()
-            .assertComplete()
+        val c1 = Completable.complete().debug("myCompletable")
+        val d1 = c1.autoSubscribe()
+
+        c1.test().assertComplete()
+        d1.dispose()
 
         Completable.fromAction { }
             .debugWithThread("myCompletable")
             .test()
             .assertComplete()
 
-        Completable.error(IllegalStateException("test")).debug("myCompletable").test().assertError(IllegalStateException::class.java)
-        Completable.error(IllegalStateException("test")).debugWithThread("myCompletable").test().assertError(IllegalStateException::class.java)
+        Completable.error(IllegalStateException("test")).debug("myCompletable")
+            .test().assertError(IllegalStateException::class.java)
+
+        Completable.error(IllegalStateException("test")).debugWithThread("myCompletable")
+            .test().assertError(IllegalStateException::class.java)
     }
 
     @Test
