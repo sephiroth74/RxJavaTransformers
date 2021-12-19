@@ -69,6 +69,7 @@ fun <T> Single<T>.debug(tag: String): Single<T> where T : Any {
         .doOnSubscribe { Log.v(tag, "onSubscribe()") }
         .doOnSuccess { Log.v(tag, "onSuccess()") }
         .doOnDispose { Log.w(tag, "onDispose()") }
+        .doOnTerminate { Log.v(tag, "onTerminate()") }
 }
 
 fun <T> Single<T>.debugWithThread(tag: String): Single<T> where T : Any {
@@ -77,4 +78,5 @@ fun <T> Single<T>.debugWithThread(tag: String): Single<T> where T : Any {
         .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
         .doOnSuccess { Log.v(tag, "[${Thread.currentThread().name}] onSuccess()") }
         .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
+        .doOnTerminate { Log.w(tag, "[${Thread.currentThread().name}] onTerminate()") }
 }

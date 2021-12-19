@@ -6,6 +6,7 @@ import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.schedulers.Schedulers
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSingleObserver
 import it.sephiroth.android.rxjava3.extensions.single.*
 import org.junit.Assert
@@ -101,17 +102,33 @@ class SingleAndroidTest {
 
     @Test
     fun test06() {
-        val s1 = Single.just(1).debug("myClass")
-        val d1 = s1.subscribe()
-        s1.test()
-        d1.dispose()
-
-        val s2 = Single.just(1).debugWithThread("myClass")
-        val d2 = s2.subscribe()
-        s2.test()
-        d2.dispose()
+        Single.just(1).debug("myClass").test()
+        Single.just(1).debugWithThread("myClass").test()
 
         Single.error<Int>(IllegalStateException("test")).debug("myClass").test().assertError(IllegalStateException::class.java)
         Single.error<Int>(IllegalStateException("test")).debugWithThread("myClass").test().assertError(IllegalStateException::class.java)
+
+        val r1 = mutableListOf<String>()
+        val latch = CountDownLatch(1)
+
+        // success should not be called
+        val d = Single.create<Int> { emitter ->
+            Thread.sleep(100)
+            if (!emitter.isDisposed) emitter.onSuccess(1)
+        }.subscribeOn(Schedulers.computation())
+            .debug("DelayedSingle")
+            .doOnDispose {
+                latch.countDown()
+            }
+            .autoSubscribe {
+                doOnSuccess { r1.add("success") }
+                doOnStart { r1.add("start") }
+            }
+
+        d.dispose()
+
+        latch.await()
+        Assert.assertEquals(listOf("start"), r1)
+
     }
 }
