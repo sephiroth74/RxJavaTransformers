@@ -279,7 +279,10 @@ class ObservableAndroidTest {
             .mapNotNull { it ->
                 if (it % 2 == 0) it
                 else null
-            }.test().assertValues(2, 4, 6)
+            }
+            .test()
+            .assertValues(2, 4, 6)
+            .assertComplete()
 
         Observable
             .just(1, 2, 3, 4, 5, 6)
@@ -287,6 +290,8 @@ class ObservableAndroidTest {
             .test()
             .assertNoValues()
             .assertComplete()
+
+        Observable.just(1)
 
     }
 }

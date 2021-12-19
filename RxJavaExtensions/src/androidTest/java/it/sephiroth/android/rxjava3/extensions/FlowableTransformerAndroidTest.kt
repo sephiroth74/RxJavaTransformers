@@ -4,12 +4,25 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.core.FlowableOperator
+import io.reactivex.rxjava3.core.FlowableSubscriber
+import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.exceptions.Exceptions
+import io.reactivex.rxjava3.functions.Consumer
+import io.reactivex.rxjava3.internal.fuseable.HasUpstreamPublisher
+import io.reactivex.rxjava3.internal.operators.flowable.FlowableInternalHelper
+import io.reactivex.rxjava3.internal.subscriptions.SubscriptionHelper
+import io.reactivex.rxjava3.observers.LambdaConsumerIntrospection
+import io.reactivex.rxjava3.plugins.RxJavaPlugins
 import io.reactivex.rxjava3.processors.PublishProcessor
 import io.reactivex.rxjava3.schedulers.Schedulers
 import it.sephiroth.android.rxjava3.extensions.operators.FlowableTransformers
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 
 /**
@@ -74,5 +87,170 @@ class FlowableTransformerAndroidTest {
         println("done")
 
 
+    }
+
+    @Test
+    fun test02() {
+//        val count = CountDownLatch(1)
+//        val p = PublishProcessor.create<Event>().toSerialized()
+//        val f = p.share()
+//            .retry()
+//            .onBackpressureBuffer()
+//            .subscribeOn(Schedulers.io())
+//            .observeOn(AndroidSchedulers.mainThread())
+//
+//
+//        val d1 = subscribe(f.ofType(Event01::class.java)) {
+//            println("Event01 received on d1")
+//        }
+//
+//        val d2 = subscribe(f.ofType(Event01::class.java)) {
+//            println("Event01 received on d2")
+//        }
+//
+//        val d3 = subscribe(f.ofType(Event02::class.java)) {
+//            println("Event02 received on d3")
+//        }
+//
+//        Thread.sleep(200)
+//
+//        println("** sending Event01")
+//        p.onNext(Event01())
+//
+//        println("** sending Event01")
+//        p.onNext(Event02())
+//
+//        Thread.sleep(200)
+//
+//        d1.dispose()
+//
+//        count.await(1, TimeUnit.SECONDS)
+    }
+
+    private fun <T : Event> subscribe(upstream: Flowable<T>, action: (T) -> Unit): Disposable {
+        val ls = LambdaSubscriber(action, FlowableInternalHelper.RequestMax.INSTANCE)
+
+        if (upstream is HasUpstreamPublisher<*>) {
+            println("upstream.source=${upstream.source()}")
+        }
+
+        upstream.subscribe(ls)
+        return ls
+    }
+
+    abstract class Event
+    class Event01 : Event()
+    class Event02 : Event()
+}
+
+
+class LambdaSubscriber<T : Any>(
+    private val action: (T) -> Unit,
+    private val onSubscribe: Consumer<Subscription>
+) : AtomicReference<Subscription?>(), FlowableSubscriber<T>, Subscription, Disposable, LambdaConsumerIntrospection {
+
+    override fun onSubscribe(s: Subscription) {
+        println("LambdaSubscriber::onSubscribe(${s.javaClass}, ${System.identityHashCode(s)})")
+        if (SubscriptionHelper.setOnce(this, s)) {
+            onSubscribe.accept(this)
+        }
+    }
+
+    override fun onNext(t: T) {
+        println("LambdaSubscriber::onNext()")
+        if (!isDisposed) {
+            try {
+                action.invoke(t)
+            } catch (e: Throwable) {
+                Exceptions.throwIfFatal(e)
+                get()?.cancel()
+                onError(e)
+            }
+        }
+    }
+
+    override fun onError(t: Throwable) {
+        RxJavaPlugins.onError(t)
+    }
+
+    override fun onComplete() {
+        println("LambdaSubscriber::onComplete()")
+    }
+
+    override fun dispose() {
+        println("LambdaSubscriber::dispose()")
+        cancel()
+    }
+
+    override fun isDisposed(): Boolean {
+        return get() === SubscriptionHelper.CANCELLED
+    }
+
+    override fun request(n: Long) {
+        get()?.request(n)
+    }
+
+    override fun cancel() {
+        println("LambdaSubscriber::cancel()")
+        SubscriptionHelper.cancel(this)
+    }
+
+    override fun hasCustomOnError(): Boolean {
+        return false
+    }
+
+    override fun toString(): String {
+        return "LambdaSubscriber(${System.identityHashCode(this)})"
+    }
+
+
+}
+
+
+internal class CustomOperator<T : Any> : FlowableOperator<T, T> {
+    override fun apply(upstream: Subscriber<in T>): Subscriber<in T> {
+        return CustomSubscriber<T>(upstream)
+    }
+}
+
+class CustomSubscriber<T : Any>(private val downstream: Subscriber<in T>) : FlowableSubscriber<T>, Subscription {
+    private val tag = "CustomSubscriber[${System.identityHashCode(this)}]"
+
+    private var upstream: Subscription? = null
+
+    override fun onSubscribe(s: Subscription) {
+        println("$tag: onSubscribe(upstream=$upstream, s=${s.javaClass})")
+        println("downstream=$downstream")
+        if (upstream != null) {
+            s.cancel()
+        } else {
+            upstream = s
+            downstream.onSubscribe(this)
+        }
+    }
+
+    override fun onNext(item: T) {
+        println("$tag: onNext($item)")
+        downstream.onNext(item)
+//        upstream!!.request(1)
+    }
+
+    override fun onError(throwable: Throwable) {
+        println("$tag: onError()")
+        downstream.onError(throwable)
+    }
+
+    override fun onComplete() {
+        println("$tag: onComplete()")
+        downstream.onComplete()
+    }
+
+    override fun request(n: Long) {
+        upstream!!.request(n)
+    }
+
+    override fun cancel() {
+        println("$tag: cancel()")
+        upstream!!.cancel()
     }
 }
