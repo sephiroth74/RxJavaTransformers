@@ -22,7 +22,7 @@ fun Disposable?.disposeSafe() {
 }
 
 /**
- * Returns true if a [Disposable] is currently not null and not unsubscribed
+ * Returns if a [Disposable] is null or disposed
  */
-fun Disposable?.isDisposed(): Boolean = this?.isDisposed ?: true
+fun Disposable?.isNullOrDisposed(): Boolean = this?.isDisposed ?: true
 

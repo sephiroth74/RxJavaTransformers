@@ -22,23 +22,23 @@ import java.util.concurrent.atomic.AtomicInteger
 @RunWith(AndroidJUnit4::class)
 @SmallTest
 class ContextAndroidTest {
-    @Test
-    fun test01() {
-        val latch = CountDownLatch(1)
-        val result = AtomicInteger(0)
-        val context = InstrumentationRegistry.getInstrumentation().context
-        val s = context
-            .observeBroadcasts(Intent.ACTION_TIME_TICK)
-            .observeMain()
-            .subscribe {
-                println("tick :$it")
-                result.addAndGet(1)
-                latch.countDown()
-            }
-
-        latch.await(1, TimeUnit.MINUTES)
-        Assert.assertEquals(1, result.get())
-    }
+//    @Test
+//    fun test01() {
+//        val latch = CountDownLatch(1)
+//        val result = AtomicInteger(0)
+//        val context = InstrumentationRegistry.getInstrumentation().context
+//        val s = context
+//            .observeBroadcasts(Intent.ACTION_TIME_TICK)
+//            .observeMain()
+//            .subscribe {
+//                println("tick :$it")
+//                result.addAndGet(1)
+//                latch.countDown()
+//            }
+//
+//        latch.await(1, TimeUnit.MINUTES)
+//        Assert.assertEquals(1, result.get())
+//    }
 
     @Test
     fun test02() {
@@ -54,12 +54,15 @@ class ContextAndroidTest {
                 latch[0].countDown()
             }
 
+        // assume exact 1 intent received
         context.sendBroadcast(Intent("test.ACTION_1"))
         latch[0].await(1, TimeUnit.SECONDS)
         Assert.assertEquals(1, result.get())
 
-        // now disposing receiver. we should not receive another intent notification
+        // now disposing receiver.
+        // we should not receive intent notifications anymore
         d.dispose()
+
         latch[0] = CountDownLatch(1)
         context.sendBroadcast(Intent("test.ACTION_1"))
         Assert.assertEquals(1, result.get())

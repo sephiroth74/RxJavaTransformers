@@ -13,6 +13,11 @@ coveralls {
     jacocoReportPath 'build/reports/coverage/androidTest/debug/report.xml'
 }
 
+jacoco {
+    toolVersion = "0.8.7"
+}
+
+
 android {
     compileSdkVersion 31
 
@@ -88,7 +93,9 @@ configurations.all {
 }
 
 afterEvaluate {
+
     setupAndroidReporting()
+
     publishing {
         publications {
             release(MavenPublication) {
@@ -101,6 +108,8 @@ afterEvaluate {
 }
 
 def setupAndroidReporting() {
+    println("setupAndroidReporting")
+
     tasks.withType(Test) {
         // Whether or not classes without source location should be instrumented
         jacoco.includeNoLocationClasses = true
@@ -111,13 +120,19 @@ def setupAndroidReporting() {
     def buildTypes = android.buildTypes.collect { type ->
         type.name
     }
+
+    // When no product flavors defined, use empty
     def productFlavors = android.productFlavors.collect { flavor ->
         flavor.name
     }
-    // When no product flavors defined, use empty
     if (!productFlavors) productFlavors.add('')
+
     productFlavors.each { productFlavorName ->
+        println("productFlavorName: $productFlavorName")
+
         buildTypes.each { buildTypeName ->
+            println("buildTypeName: $buildTypeName")
+
             def sourceName, sourcePath
             if (!productFlavorName) {
                 sourceName = sourcePath = "${buildTypeName}"
@@ -125,11 +140,13 @@ def setupAndroidReporting() {
                 sourceName = "${productFlavorName}${buildTypeName.capitalize()}"
                 sourcePath = "${productFlavorName}/${buildTypeName}"
             }
+
             def testTaskName = "test${sourceName.capitalize()}UnitTest"
-            System.out.println("Task -> $testTaskName")
+            def coverageTaskName = "${testTaskName}Coverage"
+            System.out.println("Task -> $testTaskName (generate report: $coverageTaskName)")
 
             // Create coverage task of form 'testFlavorTypeCoverage' depending on 'testFlavorTypeUnitTest'
-            task "${testTaskName}Coverage"(type: JacocoReport, dependsOn: "$testTaskName") {
+            task "$coverageTaskName"(type: JacocoReport, dependsOn: "$testTaskName") {
                 group = "Reporting"
                 description = "Generate Jacoco coverage reports on the ${sourceName.capitalize()} build."
 
@@ -174,14 +191,24 @@ def setupAndroidReporting() {
 
                 def javaTree = fileTree(dir: "${project.buildDir}/intermediates/javac/$sourceName/classes", excludes: fileFilter)
                 def kotlinTree = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/$sourceName", excludes: fileFilter)
+
                 classDirectories.from = files([javaTree], [kotlinTree])
-                executionData.from = files("${project.buildDir}/jacoco/${testTaskName}.exec")
-                def coverageSourceDirs = ["src/main/java",
-                                          "src/$productFlavorName/java",
-                                          "src/$buildTypeName/java"]
+
+                //sourceSets.add(sourceSets.main)
+                executionData.from = files([
+                        fileTree(project.buildDir).include("/jacoco/*.exec"),
+                        fileTree(project.buildDir).include("outputs/code_coverage/debugAndroidTest/connected/**/*.ec")
+                ])
+
+                def coverageSourceDirs = ["$project.projectDir/src/main/java", "src/$productFlavorName/java", "src/$buildTypeName/java"]
 
                 sourceDirectories.setFrom(files(coverageSourceDirs))
                 additionalSourceDirs.setFrom(files(coverageSourceDirs))
+
+//                android.sourceSets.each {
+//                    println("sourceSet: $it.srcDirs")
+//                    sourceSets.add(it)
+//                }
 
                 reports {
                     csv.enabled false // change if needed
@@ -191,6 +218,10 @@ def setupAndroidReporting() {
                         destination file("${buildDir}/coverage-report")
                     }
                 }
+
+                def parentTaskName = "create${buildTypeName.capitalize()}CoverageReport"
+
+                tasks.named(coverageTaskName).get().dependsOn(parentTaskName)
             }
         }
     }

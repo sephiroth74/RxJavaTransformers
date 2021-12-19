@@ -5,7 +5,6 @@ package it.sephiroth.android.rxjava3.extensions.context
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import it.sephiroth.android.rxjava3.extensions.observers.BroadcastReceiverObserver
@@ -40,7 +39,8 @@ fun Context.observeBroadcasts(intentFilter: IntentFilter): Observable<Intent> {
                     unregisterReceiver(it)
                 } catch (t: Throwable) {
                     t.printStackTrace()
-                }; receiver = null
+                }
+                receiver = null
             }
         })
         registerReceiver(receiver, intentFilter)

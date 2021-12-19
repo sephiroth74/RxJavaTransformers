@@ -2,14 +2,12 @@ package it.sephiroth.android.rxjava3.extensions
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import it.sephiroth.android.rxjava3.extensions.disposable.disposeSafe
-import it.sephiroth.android.rxjava3.extensions.disposable.isDisposed
+import it.sephiroth.android.rxjava3.extensions.disposable.isNullOrDisposed
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.concurrent.TimeUnit
 
 
 /**
@@ -22,23 +20,25 @@ import java.util.concurrent.TimeUnit
 class DisposableAndroidTest {
     @Test
     fun test01() {
-        var disposable: Disposable? = null
-        Assert.assertTrue(disposable.isDisposed())
+        val disposable: Disposable? = null
+        Assert.assertTrue(disposable.isNullOrDisposed())
+        Assert.assertFalse(Disposable.empty().isNullOrDisposed())
+        Assert.assertTrue(Disposable.disposed().isNullOrDisposed())
+    }
 
-        disposable = Observable.just(1, 2, 3, 4, 5).subscribe()
-        Thread.sleep(100)
-        Assert.assertTrue(disposable.isDisposed())
+    @Test
+    fun test02() {
+        val nullDisposable: Disposable? = null
+        nullDisposable.disposeSafe()
+        Assert.assertTrue(nullDisposable.isNullOrDisposed())
 
-        disposable.disposeSafe()
-        Assert.assertTrue(disposable.isDisposed())
+        val d2 = Disposable.disposed()
+        d2.disposeSafe()
+        Assert.assertTrue(d2.isDisposed)
 
-        // second observable
-
-        disposable = Observable.interval(10, TimeUnit.MILLISECONDS).subscribe()
-        Thread.sleep(100)
-        Assert.assertFalse(disposable.isDisposed())
-
-        disposable.disposeSafe()
-        Assert.assertTrue(disposable.isDisposed())
+        val d3 = Disposable.empty()
+        Assert.assertFalse(d3.isDisposed)
+        d3.disposeSafe()
+        Assert.assertTrue(d3.isDisposed)
     }
 }
