@@ -9,6 +9,10 @@ plugins {
 group "it.sephiroth.android.library"
 version "3.0.1"
 
+coveralls {
+    jacocoReportPath 'build/reports/coverage/androidTest/debug/report.xml'
+}
+
 android {
     compileSdkVersion 31
 
