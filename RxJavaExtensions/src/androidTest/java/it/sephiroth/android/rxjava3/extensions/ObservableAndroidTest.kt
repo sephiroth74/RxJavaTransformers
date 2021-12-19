@@ -6,10 +6,13 @@ import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.PublishSubject
 import it.sephiroth.android.rxjava3.extensions.observable.*
+import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executor
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -70,7 +73,7 @@ class ObservableAndroidTest {
         val latch = CountDownLatch(1)
         Observable
             .just(1)
-            .refreshEvery(50, TimeUnit.MILLISECONDS, Schedulers.newThread())
+            .refreshEvery(50, TimeUnit.MILLISECONDS)
             .autoSubscribe {
                 doOnNext {
                     if (counter.incrementAndGet() > 9) {
@@ -178,6 +181,7 @@ class ObservableAndroidTest {
                 System.currentTimeMillis() - now < 1000
             }, delay = 100, unit = TimeUnit.MILLISECONDS)
             .subscribeOn(Schedulers.newThread())
+            .debug("muteUntil")
             .test()
             .await()
             .assertValueCount(5)
@@ -292,6 +296,36 @@ class ObservableAndroidTest {
             .assertComplete()
 
         Observable.just(1)
+
+    }
+
+    @Test
+    fun test13() {
+        val currentThread = Thread.currentThread()
+
+        val result = mutableListOf<String>()
+        val o = Observable.just(1, 23)
+        o.autoSubscribe(AutoDisposableObserver() {
+                doOnStart {
+                    result.add("start")
+                    Assert.assertEquals(currentThread, Thread.currentThread())
+                }
+                doOnNext {
+                    result.add("next")
+                    Assert.assertEquals(currentThread, Thread.currentThread())
+                }
+                doOnComplete {
+                    result.add("complete")
+                    Assert.assertEquals(currentThread, Thread.currentThread())
+                }
+                doOnError {
+                    result.add("error")
+                    Assert.assertEquals(currentThread, Thread.currentThread())
+                }
+            })
+
+        o.test().await()
+        Assert.assertEquals(listOf("start", "next", "next", "complete"), result)
 
     }
 }

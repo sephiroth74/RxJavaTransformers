@@ -4,7 +4,10 @@ import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import io.reactivex.rxjava3.core.Maybe
+import io.reactivex.rxjava3.schedulers.Schedulers
 import it.sephiroth.android.rxjava3.extensions.maybe.autoSubscribe
+import it.sephiroth.android.rxjava3.extensions.maybe.debug
+import it.sephiroth.android.rxjava3.extensions.maybe.debugWithThread
 import it.sephiroth.android.rxjava3.extensions.maybe.observeMain
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableMaybeObserver
 import org.junit.Assert
@@ -203,4 +206,36 @@ class MaybeAndroidTest {
         m.test().await().assertValue(1)
         Assert.assertEquals(1, result.get())
     }
+
+    @Test
+    fun test08() {
+        Maybe.just(1).debug("maybe").test().await()
+        Maybe.just(1).debugWithThread("maybe").test().await()
+
+        Maybe.empty<Int>().debug("maybe").test().await()
+        Maybe.empty<Int>().debugWithThread("maybe").test().await()
+
+        Maybe.error<Int>(RuntimeException("test")).debug("maybe").test().await()
+        Maybe.error<Int>(RuntimeException("test")).debugWithThread("maybe").test().await()
+
+        val m1 = Maybe.create<Int> {
+            Thread.sleep(50)
+            it.onSuccess(1)
+        }.subscribeOn(Schedulers.computation()).debug("maybe1")
+        val s1 = m1.subscribe()
+        s1.dispose()
+        Thread.sleep(100)
+        m1.test().await()
+
+        val m2 = Maybe.create<Int> {
+            Thread.sleep(50)
+            it.onSuccess(1)
+        }.subscribeOn(Schedulers.computation()).debugWithThread("maybe2")
+        val s2 = m2.subscribe()
+        s2.dispose()
+        Thread.sleep(100)
+        m2.test().await()
+
+    }
 }
+
