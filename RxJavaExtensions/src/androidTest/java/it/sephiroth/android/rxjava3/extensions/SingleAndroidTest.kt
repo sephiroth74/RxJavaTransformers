@@ -114,7 +114,7 @@ class SingleAndroidTest {
 
         // success should not be called
         val d = Single.create<Int> { emitter ->
-            Thread.sleep(100)
+            Thread.sleep(50)
             if (!emitter.isDisposed) emitter.onSuccess(1)
         }.subscribeOn(Schedulers.computation())
             .debug("DelayedSingle")

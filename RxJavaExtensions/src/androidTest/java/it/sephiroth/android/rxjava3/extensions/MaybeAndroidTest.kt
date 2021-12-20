@@ -209,33 +209,33 @@ class MaybeAndroidTest {
 
     @Test
     fun test08() {
-        Maybe.just(1).debug("maybe").test().await()
-        Maybe.just(1).debugWithThread("maybe").test().await()
+        Maybe.just(1).debug("maybe1").debugWithThread("maybe1-thread").test().await()
+        Maybe.empty<Int>().debug("maybe2").debugWithThread("maybe2-thread").test().await()
+        Maybe.error<Int>(RuntimeException("test")).debug("maybe3").debugWithThread("maybe3-thread").test().await()
+    }
 
-        Maybe.empty<Int>().debug("maybe").test().await()
-        Maybe.empty<Int>().debugWithThread("maybe").test().await()
+    @Test
+    fun test09() {
+        val l1 = CountDownLatch(1)
+        val latch = CountDownLatch(1)
 
-        Maybe.error<Int>(RuntimeException("test")).debug("maybe").test().await()
-        Maybe.error<Int>(RuntimeException("test")).debugWithThread("maybe").test().await()
+        val m1 = Maybe.create<Int> { emitter ->
+            l1.await()
+            if (!emitter.isDisposed) emitter.onSuccess(1)
+        }.subscribeOn(Schedulers.computation())
+            .debug("maybe1")
+            .debugWithThread("maybe1-thread")
 
-        val m1 = Maybe.create<Int> {
-            Thread.sleep(50)
-            it.onSuccess(1)
-        }.subscribeOn(Schedulers.computation()).debug("maybe1")
         val s1 = m1.subscribe()
-        s1.dispose()
-        Thread.sleep(100)
-        m1.test().await()
 
-        val m2 = Maybe.create<Int> {
-            Thread.sleep(50)
-            it.onSuccess(1)
-        }.subscribeOn(Schedulers.computation()).debugWithThread("maybe2")
-        val s2 = m2.subscribe()
-        s2.dispose()
-        Thread.sleep(100)
-        m2.test().await()
+        Schedulers.single().scheduleDirect {
+            Thread.sleep(20)
+            l1.countDown()
+            s1.dispose()
+            latch.countDown()
+        }
 
+        latch.await()
     }
 }
 

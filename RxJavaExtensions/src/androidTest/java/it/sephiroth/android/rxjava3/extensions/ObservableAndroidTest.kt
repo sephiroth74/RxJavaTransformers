@@ -2,19 +2,23 @@ package it.sephiroth.android.rxjava3.extensions
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import io.reactivex.rxjava3.subjects.BehaviorSubject
 import io.reactivex.rxjava3.subjects.PublishSubject
+import it.sephiroth.android.rxjava3.extensions.maybe.debug
+import it.sephiroth.android.rxjava3.extensions.maybe.debugWithThread
 import it.sephiroth.android.rxjava3.extensions.observable.*
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executor
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 
 /**
@@ -181,7 +185,6 @@ class ObservableAndroidTest {
                 System.currentTimeMillis() - now < 1000
             }, delay = 100, unit = TimeUnit.MILLISECONDS)
             .subscribeOn(Schedulers.newThread())
-            .debug("muteUntil")
             .test()
             .await()
             .assertValueCount(5)
@@ -303,29 +306,190 @@ class ObservableAndroidTest {
     fun test13() {
         val currentThread = Thread.currentThread()
 
+        var latch = CountDownLatch(1)
+        val targetThreadName = AtomicReference<String>()
+
+        Schedulers.single().scheduleDirect {
+            targetThreadName.set(Thread.currentThread().name)
+            latch.countDown()
+        }
+
+        latch.await()
+
+        latch = CountDownLatch(1)
+
         val result = mutableListOf<String>()
-        val o = Observable.just(1, 23)
-        o.autoSubscribe(AutoDisposableObserver() {
+        val o = Observable.just(1, 2)
+        o.subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.single())
+            .autoSubscribe(AutoDisposableObserver {
+                doOnStart {
+                    println("onStart")
+                    result.add("start")
+                    Assert.assertEquals(currentThread, Thread.currentThread())
+                }
+                doOnNext {
+                    println("onNext")
+                    result.add("next")
+                    Assert.assertEquals(targetThreadName.get(), Thread.currentThread().name)
+                }
+                doOnComplete {
+                    println("onComplete")
+                    result.add("complete")
+                    Assert.assertEquals(targetThreadName.get(), Thread.currentThread().name)
+                    latch.countDown()
+                }
+                doOnError {
+                    println("onError")
+                    result.add("error")
+                    Assert.assertEquals(targetThreadName.get(), Thread.currentThread().name)
+                }
+            })
+
+        o.test().await().assertComplete()
+        latch.await()
+        Assert.assertEquals(listOf("start", "next", "next", "complete"), result)
+    }
+
+
+    @Test
+    fun test14() {
+        val currentThread = Thread.currentThread()
+
+        var latch = CountDownLatch(1)
+        val targetThreadName = AtomicReference<String>()
+
+        Schedulers.single().scheduleDirect {
+            targetThreadName.set(Thread.currentThread().name)
+            latch.countDown()
+        }
+
+        latch.await()
+
+        latch = CountDownLatch(1)
+
+        val result = mutableListOf<String>()
+        val o = Observable.error<Int>(RuntimeException("test"))
+        o.subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.single())
+            .autoSubscribe(AutoDisposableObserver {
                 doOnStart {
                     result.add("start")
                     Assert.assertEquals(currentThread, Thread.currentThread())
                 }
                 doOnNext {
                     result.add("next")
-                    Assert.assertEquals(currentThread, Thread.currentThread())
+                    Assert.assertEquals(targetThreadName.get(), Thread.currentThread().name)
                 }
                 doOnComplete {
                     result.add("complete")
-                    Assert.assertEquals(currentThread, Thread.currentThread())
+                    println("${Thread.currentThread()}")
+                    Assert.assertEquals(targetThreadName.get(), Thread.currentThread().name)
                 }
                 doOnError {
                     result.add("error")
-                    Assert.assertEquals(currentThread, Thread.currentThread())
+                    Assert.assertEquals(targetThreadName.get(), Thread.currentThread().name)
+                    latch.countDown()
                 }
             })
 
+        o.test().await().assertError(RuntimeException::class.java)
+        latch.await()
+        Assert.assertEquals(listOf("start", "error"), result)
+    }
+
+    @Test
+    fun test15() {
+        Observable.just(1).debug("o1").debugWithThread("o1-thread").test().await()
+        Observable.error<Int>(RuntimeException("test")).debug("o2").debugWithThread("o2-thread").test().assertError(RuntimeException::class.java)
+    }
+
+    @Test
+    fun test16() {
+        val l1 = CountDownLatch(1)
+        val latch = CountDownLatch(1)
+
+        val m1 = Observable.create<Int> { emitter ->
+            l1.await()
+            if (!emitter.isDisposed) emitter.onNext(1)
+        }.subscribeOn(Schedulers.computation())
+            .debug("o1")
+            .debugWithThread("o1-thread")
+
+        val s1 = m1.subscribe()
+
+        Schedulers.single().scheduleDirect {
+            Thread.sleep(20)
+            l1.countDown()
+            s1.dispose()
+            latch.countDown()
+        }
+
+        latch.await()
+    }
+
+    @Test
+    fun test17() {
+        val source = BehaviorSubject.createDefault(true)
+
+        val latch = CountDownLatch(1)
+        val now = System.currentTimeMillis()
+        val elapsed = AtomicLong()
+        val pausedSource = source.toSerialized().share()
+
+        val o = ObservableUtils.pausedTimer(300, TimeUnit.MILLISECONDS, pausedSource)
+            .doOnComplete {
+                elapsed.set(System.currentTimeMillis() - now)
+                println("timer::onComplete: ${System.currentTimeMillis() - now}")
+                latch.countDown()
+            }
+
+        Schedulers.single().scheduleDirect {
+            println("opening gate...")
+            Thread.sleep(200)
+            source.onNext(false)
+        }
+
         o.test().await()
-        Assert.assertEquals(listOf("start", "next", "next", "complete"), result)
+        latch.await()
+
+        Assert.assertTrue(elapsed.get() > 500)
+    }
+
+    @Test
+    fun test18() {
+        // pausedInterval
+        val source = BehaviorSubject.createDefault(true)
+        val pausedSource = source.toSerialized().share()
+
+        val latch = CountDownLatch(1)
+        var now = System.currentTimeMillis()
+        val elapsed = AtomicLong()
+        val o = ObservableUtils.pausedInterval(50, TimeUnit.MILLISECONDS, pausedSource)
+            .doOnSubscribe {
+                now = System.currentTimeMillis()
+            }
+            .doOnNext {
+                elapsed.set(System.currentTimeMillis() - now)
+                println("timer.next = ${System.currentTimeMillis() - now}")
+                latch.countDown()
+            }
+            .doOnComplete {
+                println("timer.complete = ${System.currentTimeMillis() - now}")
+            }
+
+
+        Schedulers.single().scheduleDirect {
+            Thread.sleep(500)
+            println("opening gate")
+            source.onNext(false)
+        }
+
+        val s = o.subscribe()
+        latch.await()
+        s.dispose()
+
+        Assert.assertTrue(elapsed.get() in 501..600)
 
     }
 }
