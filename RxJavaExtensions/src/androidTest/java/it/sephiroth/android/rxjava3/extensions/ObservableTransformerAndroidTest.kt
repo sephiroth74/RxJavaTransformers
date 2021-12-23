@@ -76,6 +76,6 @@ class ObservableTransformerAndroidTest {
     fun test02() {
         val o1 = Observable.just(1, 2, 3, 4, 5)
         val o2 = PublishSubject.create<Boolean>()
-        o1.compose(ObservableTransformers.valveLast(o2, true)).test().await().assertComplete().assertValues(1, 2, 3, 4, 5)
+        o1.compose(ObservableTransformers.valveLast(o2)).test().await().assertComplete().assertValues(1, 2, 3, 4, 5)
     }
 }

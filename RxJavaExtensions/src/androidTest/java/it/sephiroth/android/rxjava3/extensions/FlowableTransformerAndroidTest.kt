@@ -91,40 +91,9 @@ class FlowableTransformerAndroidTest {
 
     @Test
     fun test02() {
-//        val count = CountDownLatch(1)
-//        val p = PublishProcessor.create<Event>().toSerialized()
-//        val f = p.share()
-//            .retry()
-//            .onBackpressureBuffer()
-//            .subscribeOn(Schedulers.io())
-//            .observeOn(AndroidSchedulers.mainThread())
-//
-//
-//        val d1 = subscribe(f.ofType(Event01::class.java)) {
-//            println("Event01 received on d1")
-//        }
-//
-//        val d2 = subscribe(f.ofType(Event01::class.java)) {
-//            println("Event01 received on d2")
-//        }
-//
-//        val d3 = subscribe(f.ofType(Event02::class.java)) {
-//            println("Event02 received on d3")
-//        }
-//
-//        Thread.sleep(200)
-//
-//        println("** sending Event01")
-//        p.onNext(Event01())
-//
-//        println("** sending Event01")
-//        p.onNext(Event02())
-//
-//        Thread.sleep(200)
-//
-//        d1.dispose()
-//
-//        count.await(1, TimeUnit.SECONDS)
+        val o1 = Flowable.just(1, 2, 3, 4, 5)
+        val o2 = PublishProcessor.create<Boolean>()
+        o1.compose(FlowableTransformers.valveLast(o2)).test().await().assertComplete().assertValues(1, 2, 3, 4, 5)
     }
 
     private fun <T : Event> subscribe(upstream: Flowable<T>, action: (T) -> Unit): Disposable {
