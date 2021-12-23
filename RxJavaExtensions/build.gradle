@@ -7,7 +7,7 @@ plugins {
 }
 
 group "it.sephiroth.android.library"
-version "3.0.1"
+version "3.0.4"
 
 coveralls {
     jacocoReportPath 'build/reports/coverage/androidTest/debug/report.xml'
