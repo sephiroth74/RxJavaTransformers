@@ -32,6 +32,7 @@ class ObservableMapNotNull<T : Any, R : Any>(
                 downstream.onNext(null)
                 return
             }
+
             val result: R? = try {
                 mapper.apply(t)
             } catch (ex: Throwable) {

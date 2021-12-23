@@ -298,7 +298,31 @@ class ObservableAndroidTest {
             .assertNoValues()
             .assertComplete()
 
-        Observable.just(1)
+
+        val actual = AtomicInteger()
+        val max = 5
+        val o = Observable.create<Int> { emitter ->
+            do {
+                val current = actual.getAndSet(actual.get() + 1)
+                if (current < max) {
+                    emitter.onNext(actual.get())
+                } else if (current == max) {
+                    emitter.onComplete()
+                } else {
+                    println("Exceeded!")
+                }
+            } while (actual.get() <= max && !emitter.isDisposed)
+        }
+
+        o.test().await().assertValues(1, 2, 3, 4, 5).assertComplete()
+
+        actual.set(5)
+        o.mapNotNull { it % 2 == 0 }.test().assertNoValues()
+
+
+        Observable.just(1, 2, 3).mapNotNull {
+            throw RuntimeException("test exception")
+        }.test().assertError(RuntimeException::class.java).await()
 
     }
 
