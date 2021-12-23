@@ -4,6 +4,7 @@ import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.ObservableSource
 import io.reactivex.rxjava3.core.Scheduler
 import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.absoluteValue
@@ -147,11 +148,7 @@ object ObservableUtils {
         unit: TimeUnit,
         paused: ObservableSource<Boolean>,
     ): Observable<Long> {
-        val elapsedTime = AtomicLong()
-        return Observable.interval(delay, unit)
-            .withLatestFrom(paused) { _, t2 -> !t2 }
-            .filter { it }
-            .map { elapsedTime.addAndGet(unit.toMillis(delay)) }
+        return this.pausedInterval(delay, unit, paused, Schedulers.computation())
     }
 
     @JvmStatic
