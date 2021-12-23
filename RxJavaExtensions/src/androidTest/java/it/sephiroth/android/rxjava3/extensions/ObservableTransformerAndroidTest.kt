@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import io.reactivex.rxjava3.subjects.PublishSubject
 import it.sephiroth.android.rxjava3.extensions.operators.ObservableTransformers
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -69,9 +70,12 @@ class ObservableTransformerAndroidTest {
             .assertValues(3, 6, 8)
             .assertValueCount(3)
 
+    }
 
-        println("done")
-
-
+    @Test
+    fun test02() {
+        val o1 = Observable.just(1, 2, 3, 4, 5)
+        val o2 = PublishSubject.create<Boolean>()
+        o1.compose(ObservableTransformers.valveLast(o2, true)).test().await().assertComplete().assertValues(1, 2, 3, 4, 5)
     }
 }
