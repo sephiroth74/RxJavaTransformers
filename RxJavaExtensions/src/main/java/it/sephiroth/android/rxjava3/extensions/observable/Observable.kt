@@ -2,6 +2,7 @@
 
 package it.sephiroth.android.rxjava3.extensions.observable
 
+import android.annotation.SuppressLint
 import android.util.Log
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.annotations.CheckReturnValue
@@ -157,6 +158,7 @@ fun <T, R> Observable<T>.mapNotNull(mapper: Function<in T, R?>): Observable<R> w
     return RxJavaPlugins.onAssembly(ObservableMapNotNull(this, mapper))
 }
 
+@SuppressLint("LogNotTimber")
 fun <T> Observable<T>.debug(tag: String): Observable<T> where T : Any {
     return this
         .doOnNext { Log.v(tag, "onNext($it)") }
@@ -166,6 +168,7 @@ fun <T> Observable<T>.debug(tag: String): Observable<T> where T : Any {
         .doOnDispose { Log.w(tag, "onDispose()") }
 }
 
+@SuppressLint("LogNotTimber")
 fun <T> Observable<T>.debugWithThread(tag: String): Observable<T> where T : Any {
     return this
         .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }

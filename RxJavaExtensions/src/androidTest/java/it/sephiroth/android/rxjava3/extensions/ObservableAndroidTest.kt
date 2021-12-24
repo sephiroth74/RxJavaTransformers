@@ -1,20 +1,23 @@
 package it.sephiroth.android.rxjava3.extensions
 
+import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.LargeTest
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import io.reactivex.rxjava3.subjects.PublishSubject
+import it.sephiroth.android.rxjava3.extensions.completable.delay
 import it.sephiroth.android.rxjava3.extensions.observable.*
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import org.junit.Assert
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.atomic.AtomicReference
 
 
 /**
@@ -23,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference
  * @author Alessandro Crugnola on 02.03.21 - 13:47
  */
 @RunWith(AndroidJUnit4::class)
+@LargeTest
 class ObservableAndroidTest {
     @Test
     fun test001() {
@@ -48,47 +52,53 @@ class ObservableAndroidTest {
     }
 
     @Test
-    fun test03() {
+    fun test003() {
         val latch = CountDownLatch(6)
         val d = Observable
-            .just(1, 2, 3, 4, 5)
-            .autoSubscribe {
+            .just(1, 2, 3, 4, 5).autoSubscribe {
                 doOnNext { latch.countDown() }
                 doOnComplete { latch.countDown() }
             }
-
         latch.await()
         Assert.assertTrue(d.isDisposed)
     }
 
     @Test
-    fun test04() {
-        val now = System.currentTimeMillis()
+    fun test004() {
+        var now = SystemClock.elapsedRealtime()
         val counter = AtomicInteger(0)
         val latch = CountDownLatch(1)
+        val result = mutableListOf<Int>()
         Observable
             .just(1)
             .refreshEvery(50, TimeUnit.MILLISECONDS)
             .autoSubscribe {
+                doOnStart {
+                    now = SystemClock.elapsedRealtime()
+                }
                 doOnNext {
-                    if (counter.incrementAndGet() > 9) {
+                    println("onNext($it)")
+                    if (counter.incrementAndGet() > 5) {
                         dispose()
                         latch.countDown()
+                    } else {
+                        result.add(it)
                     }
                 }
 
             }
 
-        latch.await(1, TimeUnit.SECONDS)
-        Assert.assertEquals(10, counter.get())
+        latch.await()
+        Assert.assertEquals(6, counter.get())
+        Assert.assertEquals(listOf(1, 1, 1, 1, 1), result)
 
-        val totalTime = System.currentTimeMillis() - now
+        val totalTime = SystemClock.elapsedRealtime() - now
         println("totalTime: $totalTime")
-        Assert.assertTrue(totalTime >= 450)
+        Assert.assertTrue("totalTime = $totalTime should be > 250", totalTime >= 250)
     }
 
     @Test
-    fun test05() {
+    fun test005() {
         val counter = AtomicInteger(0)
         val publisher = PublishSubject.create<Boolean>()
 
@@ -115,7 +125,7 @@ class ObservableAndroidTest {
     }
 
     @Test
-    fun test06() {
+    fun test006() {
         val retryCount = AtomicInteger(0)
         val errorCount = AtomicInteger(0)
         val counter = AtomicInteger(0)
@@ -127,7 +137,6 @@ class ObservableAndroidTest {
                 if (count % 2 == 0) throw IllegalStateException("Illegal even number")
                 emitter.onNext(count)
                 if (count >= 10) emitter.onComplete()
-                Thread.sleep(1000)
             }
         }.subscribeOn(Schedulers.newThread())
             .retry(
@@ -136,9 +145,9 @@ class ObservableAndroidTest {
                     retryCount.incrementAndGet()
                     true
                 },
-                delayBeforeRetry = 1,
+                delayBeforeRetry = 100,
                 maxRetry = 1,
-                timeUnit = TimeUnit.SECONDS
+                timeUnit = TimeUnit.MILLISECONDS
             )
             .doOnNext {
                 counter.set(counter.get() + it)
@@ -149,7 +158,7 @@ class ObservableAndroidTest {
                 errorCount.incrementAndGet()
             }
             .test()
-            .awaitDone(10, TimeUnit.SECONDS)
+            .await()
 
         Assert.assertEquals(2, retryCount.get())
         Assert.assertEquals(1, errorCount.get())
@@ -158,95 +167,100 @@ class ObservableAndroidTest {
     }
 
     @Test
-    fun test07() {
+    fun test007() {
         Observable.just(listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
             .mapList { it * 2 }
             .test()
+            .await().assertComplete()
             .assertValue(listOf(2, 4, 6, 8, 10, 12, 14, 16, 18, 20))
-            .awaitDone(1, TimeUnit.SECONDS)
     }
 
     @Test
-    fun test08() {
-        val now = System.currentTimeMillis()
+    fun test008() {
+        val now = SystemClock.elapsedRealtime()
 
         Observable.just(1, 2, 3, 4, 5)
-            .muteUntil(func = {
-                println("[${System.currentTimeMillis() - now}] mute until predicate")
-                System.currentTimeMillis() - now < 1000
-            }, delay = 100, unit = TimeUnit.MILLISECONDS)
+            .muteUntil(
+                func = {
+                    println("[${System.currentTimeMillis() - now}] mute until predicate")
+                    SystemClock.elapsedRealtime() - now < 200
+                },
+                delay = 100,
+                unit = TimeUnit.MILLISECONDS
+            )
             .subscribeOn(Schedulers.newThread())
             .test()
             .await()
+            .assertComplete()
             .assertValueCount(5)
             .assertValueAt(4, 5)
-            .awaitDone(2, TimeUnit.SECONDS)
 
-        val totalTime = System.currentTimeMillis() - now
+        val totalTime = SystemClock.elapsedRealtime() - now
         println("totalTime: $totalTime")
 
-        Assert.assertTrue(totalTime > 1000)
+        Assert.assertTrue(totalTime > 200)
     }
 
     @Test
-    fun test09() {
-        val latch = CountDownLatch(7)
+    fun test009() {
+        val latch = CountDownLatch(5)
         val values = mutableListOf<Long>()
-        val now = System.currentTimeMillis()
+        val now = SystemClock.elapsedRealtime()
         var totalTime = now
-        ObservableUtils.countDown(0, 5, 1, TimeUnit.SECONDS,
+
+        ObservableUtils.countDown(0, 3, 1, TimeUnit.SECONDS,
             { value ->
-                println("onNext(time=" + (System.currentTimeMillis() - now) + ", value=" + value + ")")
+                println("onNext(time=" + (SystemClock.elapsedRealtime() - now) + ", value=" + value + ")")
                 values.add(value)
                 latch.countDown()
             },
             {
-                println("onComplete(time=" + (System.currentTimeMillis() - now) + ")")
-                totalTime = System.currentTimeMillis()
+                println("onComplete(time=" + (SystemClock.elapsedRealtime() - now) + ")")
+                totalTime = SystemClock.elapsedRealtime()
                 latch.countDown()
             })
 
-        latch.await(10, TimeUnit.SECONDS)
+        latch.await()
 
         val timePassed = totalTime - now
 
-        Assert.assertTrue(values.size == 6)
-        Assert.assertEquals(listOf(0L, 1L, 2L, 3L, 4L, 5L), values)
-        Assert.assertTrue("$timePassed should be greater than 6000", timePassed >= 5000)
-        Assert.assertTrue("$timePassed should be less than 7000", timePassed < 6000)
+        Assert.assertTrue(values.size == 4)
+        Assert.assertEquals(listOf(0L, 1L, 2L, 3L), values)
+        Assert.assertTrue("$timePassed should be greater than 3000", timePassed >= 3000)
+        Assert.assertTrue("$timePassed should be less than 4000", timePassed < 4000)
     }
 
     @Test
-    fun test10() {
-        val latch = CountDownLatch(6)
+    fun test010() {
+        val latch = CountDownLatch(4)
         val values = mutableListOf<Long>()
-        val now = System.currentTimeMillis()
+        val now = SystemClock.elapsedRealtime()
         var totalTime = now
-        ObservableUtils.countDown(5, 1, 1, TimeUnit.SECONDS,
+        ObservableUtils.countDown(3, 1, 1, TimeUnit.SECONDS,
             { value ->
-                println("onNext(time=" + (System.currentTimeMillis() - now) + ", value=" + value + ")")
+                println("onNext(time=" + (SystemClock.elapsedRealtime() - now) + ", value=" + value + ")")
                 values.add(value)
                 latch.countDown()
             },
             {
-                println("onComplete(time=" + (System.currentTimeMillis() - now) + ")")
-                totalTime = System.currentTimeMillis()
+                println("onComplete(time=" + (SystemClock.elapsedRealtime() - now) + ")")
+                totalTime = SystemClock.elapsedRealtime()
                 latch.countDown()
             })
 
-        latch.await(10, TimeUnit.SECONDS)
+        latch.await()
 
         val timePassed = totalTime - now
 
-        Assert.assertTrue(values.size == 5)
-        Assert.assertEquals(listOf(5L, 4L, 3L, 2L, 1L), values)
-        Assert.assertTrue("$timePassed should be greater than 4000", timePassed >= 4000)
-        Assert.assertTrue("$timePassed should be less than 5000", timePassed < 5000)
+        Assert.assertTrue(values.size == 3)
+        Assert.assertEquals(listOf(3L, 2L, 1L), values)
+        Assert.assertTrue("$timePassed should be greater than 4000", timePassed >= 2000)
+        Assert.assertTrue("$timePassed should be less than 5000", timePassed < 3000)
     }
 
     @Test
-    fun test11() {
-        val now = System.currentTimeMillis()
+    fun test011() {
+        val now = SystemClock.elapsedRealtime()
         val latch = CountDownLatch(100)
         val values = mutableListOf<Long>()
         ObservableUtils.timer(
@@ -254,15 +268,15 @@ class ObservableAndroidTest {
             TimeUnit.SECONDS,
             10,
             TimeUnit.MILLISECONDS,
-            onTick = { step, stepValue ->
+            onTick = { step, _ ->
                 values.add(step)
                 latch.countDown()
 
             }, null
         )
 
-        latch.await(2, TimeUnit.SECONDS)
-        val end = System.currentTimeMillis()
+        latch.await()
+        val end = SystemClock.elapsedRealtime()
 
         Assert.assertTrue(values.size == 100)
         Assert.assertEquals(LongRange(1, 100).toList(), values)
@@ -271,7 +285,7 @@ class ObservableAndroidTest {
     }
 
     @Test
-    fun test12() {
+    fun test012() {
         Observable
             .just(1, 2, 3, 4, 5, 6, 7)
             .mapNotNull { it ->
@@ -286,6 +300,8 @@ class ObservableAndroidTest {
             .just(1, 2, 3, 4, 5, 6)
             .mapNotNull { null }
             .test()
+            .await()
+            .assertComplete()
             .assertNoValues()
             .assertComplete()
 
@@ -308,7 +324,7 @@ class ObservableAndroidTest {
         o.test().await().assertValues(1, 2, 3, 4, 5).assertComplete()
 
         actual.set(5)
-        o.mapNotNull { it % 2 == 0 }.test().assertNoValues()
+        o.mapNotNull { it % 2 == 0 }.test().await().assertComplete().assertNoValues()
 
 
         Observable.just(1, 2, 3).mapNotNull {
@@ -318,20 +334,9 @@ class ObservableAndroidTest {
     }
 
     @Test
-    fun test13() {
+    fun test013() {
         val currentThread = Thread.currentThread()
-
-        var latch = CountDownLatch(1)
-        val targetThreadName = AtomicReference<String>()
-
-        Schedulers.single().scheduleDirect {
-            targetThreadName.set(Thread.currentThread().name)
-            latch.countDown()
-        }
-
-        latch.await()
-
-        latch = CountDownLatch(1)
+        val latch = CountDownLatch(1)
 
         val result = mutableListOf<String>()
         val o = Observable.just(1, 2)
@@ -339,50 +344,38 @@ class ObservableAndroidTest {
             .observeOn(Schedulers.single())
             .autoSubscribe(AutoDisposableObserver {
                 doOnStart {
-                    println("onStart")
                     result.add("start")
                     Assert.assertEquals(currentThread, Thread.currentThread())
                 }
                 doOnNext {
-                    println("onNext")
-                    result.add("next")
-                    Assert.assertEquals(targetThreadName.get(), Thread.currentThread().name)
+                    result.add("next:$it")
+                    Assert.assertEquals(singleThread, Thread.currentThread())
                 }
                 doOnComplete {
-                    println("onComplete")
                     result.add("complete")
-                    Assert.assertEquals(targetThreadName.get(), Thread.currentThread().name)
-                    latch.countDown()
+                    Assert.assertEquals(singleThread, Thread.currentThread())
                 }
                 doOnError {
-                    println("onError")
                     result.add("error")
-                    Assert.assertEquals(targetThreadName.get(), Thread.currentThread().name)
+                    Assert.assertEquals(singleThread, Thread.currentThread())
+                }
+                doOnFinish {
+                    result.add("finish")
+                    Assert.assertEquals(singleThread, Thread.currentThread())
+                    latch.countDown()
                 }
             })
 
         o.test().await().assertComplete()
         latch.await()
-        Assert.assertEquals(listOf("start", "next", "next", "complete"), result)
+        Assert.assertEquals(listOf("start", "next:1", "next:2", "complete", "finish"), result)
     }
 
 
     @Test
-    fun test14() {
+    fun test014() {
         val currentThread = Thread.currentThread()
-
-        var latch = CountDownLatch(1)
-        val targetThreadName = AtomicReference<String>()
-
-        Schedulers.single().scheduleDirect {
-            targetThreadName.set(Thread.currentThread().name)
-            latch.countDown()
-        }
-
-        latch.await()
-
-        latch = CountDownLatch(1)
-
+        val latch = CountDownLatch(1)
         val result = mutableListOf<String>()
         val o = Observable.error<Int>(RuntimeException("test"))
         o.subscribeOn(Schedulers.io())
@@ -394,57 +387,50 @@ class ObservableAndroidTest {
                 }
                 doOnNext {
                     result.add("next")
-                    Assert.assertEquals(targetThreadName.get(), Thread.currentThread().name)
+                    Assert.assertEquals(singleThread, Thread.currentThread())
                 }
                 doOnComplete {
                     result.add("complete")
-                    println("${Thread.currentThread()}")
-                    Assert.assertEquals(targetThreadName.get(), Thread.currentThread().name)
+                    Assert.assertEquals(singleThread, Thread.currentThread())
                 }
                 doOnError {
                     result.add("error")
-                    Assert.assertEquals(targetThreadName.get(), Thread.currentThread().name)
+                    Assert.assertEquals(singleThread, Thread.currentThread())
+                }
+                doOnFinish {
+                    result.add("finish")
+                    Assert.assertEquals(singleThread, Thread.currentThread())
                     latch.countDown()
                 }
             })
 
         o.test().await().assertError(RuntimeException::class.java)
         latch.await()
-        Assert.assertEquals(listOf("start", "error"), result)
+        Assert.assertEquals(listOf("start", "error", "finish"), result)
     }
 
     @Test
-    fun test15() {
+    fun test015() {
         Observable.just(1).debug("o1").debugWithThread("o1-thread").test().await()
         Observable.error<Int>(RuntimeException("test")).debug("o2").debugWithThread("o2-thread").test().assertError(RuntimeException::class.java)
     }
 
     @Test
-    fun test16() {
-        val l1 = CountDownLatch(1)
+    fun test016() {
         val latch = CountDownLatch(1)
+        val disposable = Observable.just(1, 2).delaySubscription(1, TimeUnit.SECONDS).debug("o1").debugWithThread("o1-thread").autoSubscribe { }
 
-        val m1 = Observable.create<Int> { emitter ->
-            l1.await()
-            if (!emitter.isDisposed) emitter.onNext(1)
-        }.subscribeOn(Schedulers.computation())
-            .debug("o1")
-            .debugWithThread("o1-thread")
-
-        val s1 = m1.subscribe()
-
-        Schedulers.single().scheduleDirect {
-            Thread.sleep(20)
-            l1.countDown()
-            s1.dispose()
+        delay(16, TimeUnit.MILLISECONDS) {
+            disposable.dispose()
             latch.countDown()
         }
 
         latch.await()
+        Assert.assertTrue(disposable.isDisposed)
     }
 
     @Test
-    fun test17() {
+    fun test017() {
         val source = BehaviorSubject.createDefault(true)
 
         val latch = CountDownLatch(1)
@@ -452,59 +438,85 @@ class ObservableAndroidTest {
         val elapsed = AtomicLong()
         val pausedSource = source.toSerialized().share()
 
-        val o = ObservableUtils.pausedTimer(300, TimeUnit.MILLISECONDS, pausedSource)
+        val o = ObservableUtils.pausedTimer(100, TimeUnit.MILLISECONDS, pausedSource)
             .doOnComplete {
                 elapsed.set(System.currentTimeMillis() - now)
-                println("timer::onComplete: ${System.currentTimeMillis() - now}")
                 latch.countDown()
             }
 
-        Schedulers.single().scheduleDirect {
+        delay(200, TimeUnit.MILLISECONDS) {
             println("opening gate...")
-            Thread.sleep(200)
             source.onNext(false)
         }
 
         o.test().await()
         latch.await()
 
-        Assert.assertTrue(elapsed.get() > 500)
+        println("elapsed = ${elapsed.get()}")
+
+        Assert.assertTrue(elapsed.get() > 300)
     }
 
     @Test
-    fun test18() {
-        // pausedInterval
+    fun test018() {
         val source = BehaviorSubject.createDefault(true)
         val pausedSource = source.toSerialized().share()
 
         val latch = CountDownLatch(1)
-        var now = System.currentTimeMillis()
+        var now = SystemClock.elapsedRealtime()
         val elapsed = AtomicLong()
-        val o = ObservableUtils.pausedInterval(50, TimeUnit.MILLISECONDS, pausedSource)
+
+        val observable = ObservableUtils.pausedInterval(50, TimeUnit.MILLISECONDS, pausedSource)
             .doOnSubscribe {
-                now = System.currentTimeMillis()
+                println("timer.subscribe")
+                now = SystemClock.elapsedRealtime()
             }
             .doOnNext {
-                elapsed.set(System.currentTimeMillis() - now)
-                println("timer.next = ${System.currentTimeMillis() - now}")
+                elapsed.set(SystemClock.elapsedRealtime() - now)
+                println("timer.next = ${elapsed.get()}")
                 latch.countDown()
             }
             .doOnComplete {
-                println("timer.complete = ${System.currentTimeMillis() - now}")
+                println("timer.complete = ${SystemClock.elapsedRealtime() - now}")
             }
 
 
-        Schedulers.single().scheduleDirect {
-            Thread.sleep(500)
+        delay(200, TimeUnit.MILLISECONDS) {
             println("opening gate")
             source.onNext(false)
         }
 
-        val s = o.subscribe()
+        val disposable = observable.autoSubscribe { }
+
         latch.await()
-        s.dispose()
 
-        Assert.assertTrue(elapsed.get() in 501..600)
+        disposable.dispose()
 
+        Assert.assertTrue(elapsed.get() in 201..300)
+
+    }
+
+    companion object {
+        private lateinit var ioThread: Thread
+        private lateinit var singleThread: Thread
+
+        @JvmStatic
+        @BeforeClass
+        fun before() {
+            val latch = CountDownLatch(2)
+
+            Schedulers.single().scheduleDirect {
+                singleThread = Thread.currentThread()
+                latch.countDown()
+            }
+
+            Schedulers.io().scheduleDirect {
+                ioThread = Thread.currentThread()
+                latch.countDown()
+            }
+
+            latch.await()
+
+        }
     }
 }
