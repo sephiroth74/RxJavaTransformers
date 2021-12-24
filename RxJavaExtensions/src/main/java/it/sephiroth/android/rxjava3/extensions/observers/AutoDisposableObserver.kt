@@ -17,6 +17,7 @@ class AutoDisposableObserver<T>() : DisposableObserver<T>() {
     private var _doOnStart: (() -> Unit)? = null
     private var _doOnComplete: (() -> Unit)? = null
     private var _doOnError: ((Throwable) -> Unit)? = null
+    private var _doOnFinish: (() -> Unit)? = null
 
     @Suppress("unused")
     constructor(builder: (AutoDisposableObserver<T>.() -> Unit)) : this() {
@@ -30,6 +31,7 @@ class AutoDisposableObserver<T>() : DisposableObserver<T>() {
     override fun onComplete() {
         dispose()
         _doOnComplete?.invoke()
+        _doOnFinish?.invoke()
     }
 
     override fun onStart() {
@@ -40,6 +42,7 @@ class AutoDisposableObserver<T>() : DisposableObserver<T>() {
     override fun onError(e: Throwable) {
         dispose()
         _doOnError?.invoke(e)
+        _doOnFinish?.invoke()
     }
 
     fun doOnStart(t: (() -> Unit)) {
@@ -56,5 +59,9 @@ class AutoDisposableObserver<T>() : DisposableObserver<T>() {
 
     fun doOnError(t: ((Throwable) -> Unit)) {
         _doOnError = t
+    }
+
+    fun doOnFinish(t: (() -> Unit)) {
+        _doOnFinish = t
     }
 }

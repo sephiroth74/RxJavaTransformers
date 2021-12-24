@@ -2,9 +2,10 @@ package it.sephiroth.android.rxjava3.extensions
 
 import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
-import io.reactivex.rxjava3.functions.Function
 import io.reactivex.rxjava3.schedulers.Schedulers
+import it.sephiroth.android.rxjava3.extensions.observable.firstInList
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSingleObserver
 import it.sephiroth.android.rxjava3.extensions.single.*
 import org.junit.Assert
@@ -121,10 +122,22 @@ class SingleAndroidTest {
     fun test008() {
         Single.just(listOf(1, 2, 3, 4, 5)).firstInList().test().await().assertComplete().assertValue(1)
         Single.just(emptyList<Int>()).firstInList().test().await().assertComplete().assertNoValues()
+
+        Single.just(listOf(null, 1)).firstInList().test().await().assertError(NullPointerException::class.java)
+        Single.just(listOf(null, null)).firstInList().test().await().assertError(NullPointerException::class.java)
     }
 
     @Test
     fun test009() {
+        Single.just(listOf(1, 2, 3, 4, 5)).firstInListNotNull().test().await().assertComplete().assertValue(1)
+        Single.just(emptyList<Int>()).firstInListNotNull().test().await().assertComplete().assertNoValues()
+
+        Single.just(listOf(null, 1)).firstInListNotNull().test().await().assertComplete().assertValue(1)
+        Single.just(listOf(null, null)).firstInListNotNull().test().await().assertComplete().assertNoValues()
+    }
+
+    @Test
+    fun test010() {
         Single.just(listOf(1, 2, 3, 4, 5)).asObservable().test().await().assertComplete().assertValues(1, 2, 3, 4, 5)
         Single.just(emptyList<Int>()).asObservable().test().await().assertComplete().assertNoValues()
         Single.just(listOf(1, 2, 3, null, 5)).asObservable().test().await().assertComplete().assertValues(1, 2, 3, 5)

@@ -42,19 +42,18 @@ object ObservableUtils {
         return Observable
             .interval(step, stepUnit).take(totalSteps)
             .observeMain()
-            .subscribe(
-                {
+            .autoSubscribe {
+                doOnNext {
                     // onNext
                     val currentStep = it + 1
                     val time = currentStep * step
                     onTick?.invoke(currentStep, time)
-                },
-                { // onError
-                },
-                {
+                }
+                doOnComplete {
                     // onComplete
                     onComplete?.invoke()
-                })
+                }
+            }
     }
 
     /**
@@ -93,14 +92,13 @@ object ObservableUtils {
                 if (reversed) start - value else value
             }
             .observeMain()
-            .subscribe(
-                { value ->
+            .autoSubscribe {
+                doOnNext { value ->
                     onTick?.invoke(value)
-
                     val completed = value == end
                     if (completed) onComplete?.invoke()
-                },
-                { /** empty **/ })
+                }
+            }
     }
 
     /**

@@ -7,7 +7,7 @@ jobs:
   test:
     executor:
       name: android/android-machine
-      resource-class: medium
+      resource-class: large
     steps:
       - checkout
     
@@ -20,7 +20,8 @@ jobs:
           restore-gradle-cache-prefix: v1a
           wait-for-emulator: true        
           system-image: system-images;android-29;default;x86   
-          test-command: ./gradlew test createDebugCoverageReport
+          test-command: ./gradlew test testDebugUnitTestCoverage
+          #test-command: ./gradlew test createDebugCoverageReport
 
       - android/save-gradle-cache:
           cache-prefix: v1a
@@ -88,4 +89,3 @@ workflows:
 #          test-command: ./gradlew connectedCheck createDebugCoverageReport
 #          system-image: system-images;android-28;default;x86
 
-          

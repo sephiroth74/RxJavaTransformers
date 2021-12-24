@@ -12,6 +12,7 @@ import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.functions.Function
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSingleObserver
+import java.util.*
 
 
 /**
@@ -22,11 +23,22 @@ import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSingleObs
 
 /**
  * If the [Single] returns a [List] of items, this transformer will
- * convert the source Single into a [Maybe] which will emit the very first item of the list,
+ * convert the source into a [Maybe] which will emit the very first item of the list,
  * if the list contains at least one element.
  */
 fun <T> Single<List<T>>.firstInList(): Maybe<T> {
     return this.filter { it.isNotEmpty() }.map { it.first() }
+}
+
+
+/**
+ * If the [Single] returns a [List] of items, this transformer will
+ * convert the source into a [Maybe] which will emit the very first non null item of the list.
+ *
+ * @since 3.0.5
+ */
+fun <T> Single<List<T>>.firstInListNotNull(): Maybe<T> {
+    return this.filter { it.isNotEmpty() }.mapOptional { Optional.ofNullable(it.firstOrNull { item -> item != null }) }
 }
 
 /**
@@ -59,7 +71,7 @@ fun <T> Single<T>.observeMain(): Single<T> where T : Any {
 
 
 /**
- * Converts the elements of a collection of a Single using the given mapper function
+ * Converts the elements of a list of a Single using the given mapper function
  */
 @CheckReturnValue
 @SchedulerSupport(SchedulerSupport.NONE)

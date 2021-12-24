@@ -215,7 +215,7 @@ def setupAndroidReporting() {
                     xml.enabled false // change if needed
                     html {
                         enabled true
-                        destination file("${buildDir}/coverage-report")
+                        destination file("${buildDir}/reports/coverage-report")
                     }
                 }
 

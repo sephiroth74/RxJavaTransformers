@@ -45,6 +45,16 @@ fun <T> Observable<List<T>>.firstInList(): Maybe<T> {
     return this.firstOrError().filter { it.isNotEmpty() }.map { it.first() }
 }
 
+/**
+ * If the original [Observable] returns a [List] of items, this transformer will
+ * convert the Observable into a [Maybe] which emit the very first non null item of the list.
+ *
+ * @since 3.0.5
+ */
+fun <T> Observable<List<T>>.firstInListNotNull(): Maybe<T> {
+    return this.firstOrError().filter { it.isNotEmpty() }.mapOptional { Optional.ofNullable(it.firstOrNull { item -> item != null }) }
+}
+
 
 /**
  * Subscribe the source using an instance of the [AutoDisposableObserver].

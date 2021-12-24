@@ -1,14 +1,10 @@
 package it.sephiroth.android.rxjava3.extensions
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.SmallTest
-import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import io.reactivex.rxjava3.subjects.PublishSubject
-import it.sephiroth.android.rxjava3.extensions.maybe.debug
-import it.sephiroth.android.rxjava3.extensions.maybe.debugWithThread
 import it.sephiroth.android.rxjava3.extensions.observable.*
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import org.junit.Assert
@@ -27,28 +23,28 @@ import java.util.concurrent.atomic.AtomicReference
  * @author Alessandro Crugnola on 02.03.21 - 13:47
  */
 @RunWith(AndroidJUnit4::class)
-@SmallTest
 class ObservableAndroidTest {
     @Test
-    fun test01() {
-        val o = Observable.just(1, 2, 3, 4, 5)
-            .toSingle()
-            .test()
-            .await()
-
-        o.assertComplete()
-        o.assertResult(1)
+    fun test001() {
+        Observable.just(1, 2, 3, 4, 5).toSingle().test().await().assertComplete().assertResult(1)
     }
 
     @Test
-    fun test02() {
-        val o = Observable
-            .just(listOf(1, 2, 3, 4, 5), listOf(6, 7, 8, 9, 10))
-            .firstInList()
-            .test()
-            .awaitCount(1)
+    fun test002() {
+        Observable.just(listOf(1, 2, 3, 4, 5)).firstInList().test().await().assertComplete().assertResult(1)
+        Observable.just(emptyList<Int>()).firstInList().test().await().assertComplete().assertNoValues()
 
-        o.assertResult(1)
+        Observable.just(listOf(null, 1)).firstInList().test().await().assertError(NullPointerException::class.java)
+        Observable.just(listOf(null, null)).firstInList().test().await().assertError(NullPointerException::class.java)
+    }
+
+    @Test
+    fun test002b() {
+        Observable.just(listOf(1, 2, 3, 4, 5)).firstInListNotNull().test().await().assertComplete().assertValue(1)
+        Observable.just(emptyList<Int>()).firstInListNotNull().test().await().assertComplete().assertNoValues()
+
+        Observable.just(listOf(null, 1)).firstInListNotNull().test().await().assertComplete().assertValue(1)
+        Observable.just(listOf(null, null)).firstInListNotNull().test().await().assertComplete().assertNoValues()
     }
 
     @Test
@@ -57,16 +53,11 @@ class ObservableAndroidTest {
         val d = Observable
             .just(1, 2, 3, 4, 5)
             .autoSubscribe {
-                doOnNext {
-                    latch.countDown()
-                }
-                doOnComplete {
-                    latch.countDown()
-                }
+                doOnNext { latch.countDown() }
+                doOnComplete { latch.countDown() }
             }
 
-        latch.await(1, TimeUnit.SECONDS)
-        Assert.assertEquals(0, latch.count)
+        latch.await()
         Assert.assertTrue(d.isDisposed)
     }
 
