@@ -20,7 +20,7 @@ jobs:
           restore-gradle-cache-prefix: v1a
           wait-for-emulator: true        
           system-image: system-images;android-29;default;x86   
-          test-command: ./gradlew test testDebugUnitTestCoverage
+          test-command: ./gradlew --info test testDebugUnitTestCoverage
           #test-command: ./gradlew test createDebugCoverageReport
 
       - android/save-gradle-cache:

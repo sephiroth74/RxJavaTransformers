@@ -297,6 +297,18 @@ class ObservableAndroidTest {
             .assertComplete()
 
         Observable
+            .just(1, 2, 3, 4, 5, 6, 7)
+            .filter { it > 0 }
+            .mapNotNull { it ->
+                if (it % 2 == 0) it
+                else null
+            }
+            .filter { it > 0 }
+            .test()
+            .assertValues(2, 4, 6)
+            .assertComplete()
+
+        Observable
             .just(1, 2, 3, 4, 5, 6)
             .mapNotNull { null }
             .test()

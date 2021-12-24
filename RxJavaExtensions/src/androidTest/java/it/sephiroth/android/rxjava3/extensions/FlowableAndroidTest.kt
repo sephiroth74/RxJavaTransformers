@@ -3,7 +3,7 @@ package it.sephiroth.android.rxjava3.extensions
 import android.os.Looper
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.SmallTest
+import androidx.test.filters.LargeTest
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Observable
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference
  * @author Alessandro Crugnola on 01.03.21 - 10:13
  */
 @RunWith(AndroidJUnit4::class)
-@SmallTest
+@LargeTest
 class FlowableAndroidTest {
     companion object {
         private const val TAG = "FlowableAndroidTest"

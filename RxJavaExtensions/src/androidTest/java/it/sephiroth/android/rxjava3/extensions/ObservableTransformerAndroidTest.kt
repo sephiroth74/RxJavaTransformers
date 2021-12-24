@@ -1,7 +1,7 @@
 package it.sephiroth.android.rxjava3.extensions
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.SmallTest
+import androidx.test.filters.LargeTest
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.PublishSubject
@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * @author Alessandro Crugnola on 01.03.21 - 10:53
  */
 @RunWith(AndroidJUnit4::class)
-@SmallTest
+@LargeTest
 class ObservableTransformerAndroidTest {
     @Test
     fun test01() {
