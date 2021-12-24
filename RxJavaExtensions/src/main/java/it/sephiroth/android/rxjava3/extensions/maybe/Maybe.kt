@@ -2,6 +2,7 @@
 
 package it.sephiroth.android.rxjava3.extensions.maybe
 
+import android.annotation.SuppressLint
 import android.util.Log
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Maybe
@@ -23,6 +24,11 @@ fun <T> Maybe<T>.autoSubscribe(observer: AutoDisposableMaybeObserver<T>): AutoDi
 }
 
 /**
+ * Subscribe to this [Maybe] source using an anonymous instance of the [AutoDisposableMaybeObserver]
+ */
+fun <T> Maybe<T>.autoSubscribe(): AutoDisposableMaybeObserver<T> = this.autoSubscribe(AutoDisposableMaybeObserver())
+
+/**
  * @see [autoSubscribe]
  */
 fun <T> Maybe<T>.autoSubscribe(builder: (AutoDisposableMaybeObserver<T>.() -> Unit)): AutoDisposableMaybeObserver<T> {
@@ -37,6 +43,7 @@ fun <T> Maybe<T>.observeMain(): Maybe<T> {
 }
 
 
+@SuppressLint("LogNotTimber")
 fun <T> Maybe<T>.debug(tag: String): Maybe<T> {
     return this
         .doOnSuccess { Log.v(tag, "onSuccess($it)") }
@@ -46,6 +53,7 @@ fun <T> Maybe<T>.debug(tag: String): Maybe<T> {
         .doOnDispose { Log.w(tag, "onDispose()") }
 }
 
+@SuppressLint("LogNotTimber")
 fun <T> Maybe<T>.debugWithThread(tag: String): Maybe<T> {
     return this
         .doOnSuccess { Log.v(tag, "[${Thread.currentThread().name}] onSuccess()") }

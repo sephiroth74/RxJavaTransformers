@@ -2,6 +2,7 @@
 
 package it.sephiroth.android.rxjava3.extensions.completable
 
+import android.annotation.SuppressLint
 import android.util.Log
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
@@ -53,13 +54,8 @@ fun delay(delay: Long, unit: TimeUnit, action: () -> Unit): AutoDisposableComple
     }
 }
 
-//@OptIn(ExperimentalTime::class)
-//fun delay(duration: Duration, action: () -> Unit): AutoDisposableCompletableObserver {
-//    return Completable.complete().delay(duration.inWholeMilliseconds, TimeUnit.MILLISECONDS).observeMain().autoSubscribe {
-//        doOnComplete { action.invoke() }
-//    }
-//}
 
+@SuppressLint("LogNotTimber")
 fun Completable.debug(tag: String): Completable {
     return this
         .doOnError { Log.e(tag, "onError(${it.message})") }
@@ -68,6 +64,7 @@ fun Completable.debug(tag: String): Completable {
         .doOnDispose { Log.w(tag, "onDispose()") }
 }
 
+@SuppressLint("LogNotTimber")
 fun Completable.debugWithThread(tag: String): Completable {
     return this
         .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }

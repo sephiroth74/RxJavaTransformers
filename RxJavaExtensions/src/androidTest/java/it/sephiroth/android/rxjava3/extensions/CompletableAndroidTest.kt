@@ -1,9 +1,11 @@
 package it.sephiroth.android.rxjava3.extensions
 
 import android.os.Looper
+import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.CompletableSource
 import io.reactivex.rxjava3.schedulers.Schedulers
 import it.sephiroth.android.rxjava3.extensions.completable.*
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableCompletableObserver
@@ -25,150 +27,152 @@ import java.util.concurrent.TimeUnit
 class CompletableAndroidTest {
 
     @Test
-    fun test01() {
-        val now = System.currentTimeMillis()
+    fun test001() {
         val latch = CountDownLatch(1)
-        delay(1, TimeUnit.SECONDS) {
+        val now = SystemClock.elapsedRealtime()
+        delay(100, TimeUnit.MILLISECONDS) {
+            val elapsed = SystemClock.elapsedRealtime() - now
+            Assert.assertTrue(elapsed > 100)
+            latch.countDown()
+        }
+        latch.await()
+    }
+
+    @Test
+    fun test002() {
+        val mainThread = Looper.getMainLooper().thread
+        val latch = CountDownLatch(1)
+        Completable.complete()
+            .subscribeOn(Schedulers.computation())
+            .observeMain()
+            .autoSubscribe {
+                doOnComplete {
+                    Assert.assertEquals(mainThread, Thread.currentThread())
+                    latch.countDown()
+                }
+            }
+        latch.await()
+    }
+
+    @Test
+    fun test003() {
+        val result = mutableListOf<String>()
+        val latch = CountDownLatch(1)
+        Completable.complete().autoSubscribe {
+            doOnStart {
+                result.add("start")
+            }
+            doOnComplete {
+                result.add("complete")
+                latch.countDown()
+            }
+            doOnError {
+                result.add("error")
+            }
+        }
+
+        latch.await()
+        Assert.assertEquals(listOf("start", "complete"), result)
+    }
+
+    @Test
+    fun test004() {
+        val result = mutableListOf<String>()
+        val latch = CountDownLatch(1)
+        Completable.error(RuntimeException("test exception")).autoSubscribe {
+            doOnStart {
+                result.add("start")
+            }
+            doOnComplete {
+                result.add("complete")
+            }
+            doOnError {
+                result.add("error")
+                latch.countDown()
+            }
+        }
+
+        latch.await()
+        Assert.assertEquals(listOf("start", "error"), result)
+    }
+
+    @Test
+    fun test005() {
+        val latch = CountDownLatch(1)
+        val disposable = Completable.complete().autoSubscribe()
+        delay(16, TimeUnit.MILLISECONDS) {
+            Assert.assertTrue(disposable.isDisposed)
+            latch.countDown()
+        }
+        latch.await()
+    }
+
+    @Test
+    fun test006() {
+        val result = mutableListOf<String>()
+        val latch = CountDownLatch(1)
+        Completable.complete().autoSubscribe(AutoDisposableCompletableObserver {
+            doOnStart { result.add("start") }
+            doOnComplete { result.add("complete"); latch.countDown() }
+            doOnError { result.add("error") }
+        })
+
+        latch.await()
+        Assert.assertEquals(listOf("start", "complete"), result)
+    }
+
+    @Test
+    fun test007() {
+        val result = mutableListOf<String>()
+        val latch = CountDownLatch(1)
+        Completable.complete().autoSubscribe(AutoDisposableCompletableObserver {
+            doOnStart { result.add("start") }
+            doOnComplete { result.add("complete"); latch.countDown() }
+            doOnError { result.add("error") }
+        })
+
+        latch.await()
+        Assert.assertEquals(listOf("start", "complete"), result)
+    }
+
+    @Test
+    fun test008() {
+        val result = mutableListOf<String>()
+        val latch = CountDownLatch(1)
+        Completable.error(RuntimeException("test exception")).autoSubscribe(AutoDisposableCompletableObserver {
+            doOnStart { result.add("start") }
+            doOnComplete { result.add("complete") }
+            doOnError { result.add("error"); latch.countDown() }
+        })
+
+        latch.await()
+        Assert.assertEquals(listOf("start", "error"), result)
+    }
+
+
+    @Test
+    fun test009() {
+        Completable.complete().debug("c1").debugWithThread("c1-tread").test().await().assertComplete()
+        Completable.error(RuntimeException("test")).debug("c2").debugWithThread("c2-tread").test().await().assertError(RuntimeException::class.java)
+
+        val latch = CountDownLatch(1)
+        val result = CountDownLatch(1)
+
+        val disposable = Completable.complete()
+            .delaySubscription(1, TimeUnit.SECONDS)
+            .subscribeOn(Schedulers.computation())
+            .observeOn(Schedulers.computation())
+            .debug("c3")
+            .debugWithThread("c3-thread")
+            .subscribe()
+
+        delay(16, TimeUnit.MILLISECONDS) {
+            println("ok. go.")
+            disposable.dispose()
             latch.countDown()
         }
 
-        latch.await(2, TimeUnit.SECONDS)
-        Assert.assertEquals(0, latch.count)
-        println("totalTime: ${System.currentTimeMillis() - now}")
-        Assert.assertTrue(System.currentTimeMillis() - now > 1000)
+        latch.await()
     }
 
-    @Test
-    fun test02() {
-        val latch = CountDownLatch(2)
-        Completable.create { it.onComplete() }
-            .autoSubscribe {
-                doOnStart { latch.countDown() }
-                doOnComplete { latch.countDown() }
-            }
-
-        latch.await(1, TimeUnit.SECONDS)
-        Assert.assertEquals(0, latch.count)
-    }
-
-    @Test
-    fun test03() {
-        val latch = CountDownLatch(2)
-        Completable.create { it.onComplete() }
-            .autoSubscribe(AutoDisposableCompletableObserver {
-                doOnStart {
-                    latch.countDown()
-                }
-                doOnComplete {
-                    latch.countDown()
-                }
-            })
-
-        latch.await(1, TimeUnit.SECONDS)
-        Assert.assertEquals(0, latch.count)
-    }
-
-    @Test
-    fun test04() {
-        val looper = Looper.getMainLooper()
-        Completable.create { emitter ->
-            Assert.assertTrue(Thread.currentThread() != looper.thread)
-            emitter.onComplete()
-        }
-            .subscribeOn(Schedulers.computation())
-            .observeMain()
-            .doOnComplete {
-                Assert.assertTrue(Thread.currentThread() == looper.thread)
-            }
-            .test()
-            .awaitDone(1, TimeUnit.SECONDS)
-            .assertComplete()
-    }
-
-    @Test
-    fun test05() {
-        Completable
-            .timer(20, TimeUnit.MILLISECONDS)
-            .debug("completable")
-    }
-
-    @Test
-    fun test06() {
-        val c1 = Completable.complete().debug("myCompletable")
-        val d1 = c1.autoSubscribe()
-
-        c1.test().assertComplete()
-        d1.dispose()
-
-        Completable.fromAction { }
-            .debugWithThread("myCompletable")
-            .test()
-            .assertComplete()
-
-        Completable.error(IllegalStateException("test")).debug("myCompletable")
-            .test().assertError(IllegalStateException::class.java)
-
-        Completable.error(IllegalStateException("test")).debugWithThread("myCompletable")
-            .test().assertError(IllegalStateException::class.java)
-    }
-
-    @Test
-    fun test07() {
-        val latch1 = CountDownLatch(2)
-        val result1 = mutableListOf<String>()
-
-        val c1 = Completable.create { emitter -> emitter.onComplete() }
-        c1.autoSubscribe {
-            doOnStart {
-                result1.add("onStart")
-                latch1.countDown()
-            }
-            doOnComplete {
-                result1.add("onComplete")
-                latch1.countDown()
-            }
-        }
-
-        c1.test().assertComplete()
-        latch1.await()
-
-        Assert.assertEquals(listOf("onStart", "onComplete"), result1)
-    }
-
-    @Test
-    fun test08() {
-        val latch1 = CountDownLatch(2)
-        val result1 = mutableListOf<String>()
-
-        val c1 = Completable.error(IllegalStateException("test exception")).debugWithThread("testCompletable")
-        c1.autoSubscribe {
-            doOnError {
-                result1.add("onError:${it.message}")
-                latch1.countDown()
-            }
-
-            doOnStart {
-                result1.add("onStart")
-                latch1.countDown()
-            }
-
-            doOnComplete {
-                result1.add("onComplete")
-                latch1.countDown()
-            }
-        }
-
-        c1.test().assertError(IllegalStateException::class.java)
-        latch1.await()
-
-        Assert.assertEquals(listOf("onStart", "onError:test exception"), result1)
-    }
-
-    @Test
-    fun test09() {
-        val c = Completable.complete()
-        val s = c.autoSubscribe()
-
-        Assert.assertTrue(s.isDisposed)
-    }
 }

@@ -2,11 +2,13 @@
 
 package it.sephiroth.android.rxjava3.extensions.single
 
+import android.annotation.SuppressLint
 import android.util.Log
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.annotations.CheckReturnValue
 import io.reactivex.rxjava3.annotations.SchedulerSupport
 import io.reactivex.rxjava3.core.Maybe
+import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.functions.Function
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSingleObserver
@@ -19,8 +21,8 @@ import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSingleObs
  */
 
 /**
- * If the original [Single] returns a [List] of items, this transformer will
- * convert the Observable into a [Maybe] which emit the very first item of the list,
+ * If the [Single] returns a [List] of items, this transformer will
+ * convert the source Single into a [Maybe] which will emit the very first item of the list,
  * if the list contains at least one element.
  */
 fun <T> Single<List<T>>.firstInList(): Maybe<T> {
@@ -42,6 +44,13 @@ fun <T> Single<T>.autoSubscribe(builder: (AutoDisposableSingleObserver<T>.() -> 
 }
 
 /**
+ * @see [autoSubscribe]
+ */
+fun <T> Single<T>.autoSubscribe(): AutoDisposableSingleObserver<T> where T : Any {
+    return this.autoSubscribe(AutoDisposableSingleObserver())
+}
+
+/**
  * alias for <code>Single.observeOn(AndroidSchedulers.mainThread())</code>
  */
 fun <T> Single<T>.observeMain(): Single<T> where T : Any {
@@ -50,7 +59,7 @@ fun <T> Single<T>.observeMain(): Single<T> where T : Any {
 
 
 /**
- * Converts the elements of a list of a Single
+ * Converts the elements of a collection of a Single using the given mapper function
  */
 @CheckReturnValue
 @SchedulerSupport(SchedulerSupport.NONE)
@@ -58,11 +67,27 @@ fun <R, T> Single<List<T>>.mapList(mapper: Function<in T, out R>): Single<List<R
     return this.map { list -> list.map { mapper.apply(it) } }
 }
 
+/**
+ * Flatten the list emitted by a Single to an Observable which emits each single item in the list separately
+ *
+ * @since 3.0.5
+ */
+@Suppress("UPPER_BOUND_VIOLATED_BASED_ON_JAVA_ANNOTATIONS")
+fun <T> Single<List<T>>.asObservable(): Observable<T> {
+    return this.flatMapObservable { list ->
+        Observable.create<T> { emitter ->
+            list.mapNotNull { it }.forEach { if (!emitter.isDisposed) emitter.onNext(it) }
+            if (!emitter.isDisposed) emitter.onComplete()
+        }
+    }
+}
+
 
 /**
  * Enable debug logs from a [Single], emitting
  * onNext, onError, onSubscribe and onComplete
  */
+@SuppressLint("LogNotTimber")
 fun <T> Single<T>.debug(tag: String): Single<T> where T : Any {
     return this
         .doOnError { Log.e(tag, "onError(${it.message})") }
@@ -71,6 +96,7 @@ fun <T> Single<T>.debug(tag: String): Single<T> where T : Any {
         .doOnDispose { Log.w(tag, "onDispose()") }
 }
 
+@SuppressLint("LogNotTimber")
 fun <T> Single<T>.debugWithThread(tag: String): Single<T> where T : Any {
     return this
         .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
