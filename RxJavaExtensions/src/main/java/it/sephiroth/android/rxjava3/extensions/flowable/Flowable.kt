@@ -3,13 +3,23 @@
 package it.sephiroth.android.rxjava3.extensions.flowable
 
 
+import android.annotation.SuppressLint
 import android.util.Log
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.annotations.CheckReturnValue
+import io.reactivex.rxjava3.annotations.SchedulerSupport
 import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.core.Maybe
+import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.functions.Function
+import io.reactivex.rxjava3.plugins.RxJavaPlugins
 import it.sephiroth.android.rxjava3.extensions.observable.autoSubscribe
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSubscriber
+import it.sephiroth.android.rxjava3.extensions.operators.FlowableMapNotNull
+import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.function.Predicate
 
 /**
  * RxJavaExtensions
@@ -34,6 +44,7 @@ fun <T> Flowable<T>.autoSubscribe(builder: (AutoDisposableSubscriber<T>.() -> Un
 }
 
 
+@SuppressLint("LogNotTimber")
 fun <T> Flowable<T>.debug(tag: String): Flowable<T> where T : Any {
     return this
         .doOnNext { Log.v(tag, "onNext($it)") }
@@ -45,6 +56,7 @@ fun <T> Flowable<T>.debug(tag: String): Flowable<T> where T : Any {
         .doOnTerminate { Log.w(tag, "onTerminate()") }
 }
 
+@SuppressLint("LogNotTimber")
 fun <T> Flowable<T>.debugWithThread(tag: String): Flowable<T> where T : Any {
     return this
         .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
@@ -72,11 +84,10 @@ fun <T> Flowable<T>.observeMain(): Flowable<T> where T : Any {
  * @param defaultOpened if true the very first emission of the source [Flowable] will be allowed, false otherwise
  *
  */
-@Deprecated("use debounce instead")
 fun <T : Any> Flowable<T>.skipBetween(
     time: Long,
     unit: TimeUnit,
-    defaultOpened: Boolean = true
+    defaultOpened: Boolean
 ): Flowable<T> {
     var t: Long = if (defaultOpened) 0 else System.currentTimeMillis()
     return this.filter {
@@ -153,4 +164,74 @@ fun <T, E, R> Flowable<T>.pingPong(cls1: Class<E>, cls2: Class<R>): Flowable<T> 
             false
         }
     }
+}
+
+/**
+ * Maps the elements of a list emitted by the source [Flowable]
+ * @since 3.0.5
+ */
+@CheckReturnValue
+@SchedulerSupport(SchedulerSupport.NONE)
+fun <R, T> Flowable<List<T>>.mapList(mapper: Function<in T, out R>): Flowable<List<R>> where T : Any, R : Any {
+    return this.map { list -> list.map { mapper.apply(it) } }
+}
+
+
+/**
+ * Similar to mapNotNull function of RxJava2.
+ * Map the elements of the upstream Flowable using the [mapper] function and
+ * returns only those elements not null.
+ * If all the elements returned by the mapper function are null, the upstream observable
+ * will fire onComplete.
+ *
+ * @since 3.0.5
+ *
+ */
+@Suppress("UPPER_BOUND_VIOLATED_BASED_ON_JAVA_ANNOTATIONS")
+@CheckReturnValue
+@SchedulerSupport(SchedulerSupport.NONE)
+fun <T, R> Flowable<T>.mapNotNull(mapper: Function<in T, R?>): Flowable<R> where T : Any, R : Any {
+    Objects.requireNonNull(mapper, "mapper is null")
+    return RxJavaPlugins.onAssembly(FlowableMapNotNull(this, mapper))
+}
+
+
+/**
+ * Converts the source [Flowable] into a [Single]
+ * @since 3.0.5
+ */
+fun <T> Flowable<T>.toSingle(): Single<T> where T : Any {
+    return this.firstOrError()
+}
+
+/**
+ * If the source [Flowable] returns a [List] of items, this transformer will
+ * convert the Flowable into a [Maybe] which emit the very first item of the list,
+ * if the list contains at least one element.
+ * @since 3.0.5
+ */
+fun <T> Flowable<List<T>>.firstInList(): Maybe<T> {
+    return this.firstOrError().filter { it.isNotEmpty() }.map { it.first() }
+}
+
+
+/**
+ * If the source [Flowable] returns a [List] of items, this transformer will
+ * convert the Flowable into a [Maybe] which emit the very first non null item of the list.
+ *
+ * @since 3.0.5
+ */
+fun <T> Flowable<List<T>>.firstInListNotNull(): Maybe<T> {
+    return this.firstOrError().filter { it.isNotEmpty() }.mapOptional { Optional.ofNullable(it.firstOrNull { item -> item != null }) }
+}
+
+
+/**
+ * If the source [Flowable] returns a [List] of items, this transformer will
+ * convert the Flowable into a [Maybe] which emit the very first item that match the predicate.
+ *
+ * @since 3.0.5
+ */
+fun <T> Flowable<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T> {
+    return this.firstOrError().mapOptional { list -> Optional.ofNullable(list.firstOrNull { item -> predicate.test(item) }) }
 }

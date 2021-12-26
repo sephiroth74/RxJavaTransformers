@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class ObservableTransformerAndroidTest {
     @Test
     fun test01() {
+
         val now = System.currentTimeMillis()
 
         val o1 = Observable.create<Boolean> { emitter ->

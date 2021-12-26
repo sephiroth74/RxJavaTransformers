@@ -52,12 +52,33 @@ class ObservableAndroidTest {
     }
 
     @Test
+    fun test002c() {
+        Observable.just(listOf(1, 2, 3, 4, 5))
+            .firstInList { it % 2 == 0 }
+            .test().await().assertComplete().assertValue(2)
+
+        Observable.just(emptyList<Int>())
+            .firstInList { it % 2 == 0 }
+            .test().await().assertComplete().assertNoValues()
+
+        Observable.just(listOf(null, 1, 2))
+            .firstInList { null != it && it % 2 == 0 }
+            .test().await().assertComplete().assertValue(2)
+
+        Observable.just(listOf<Int?>(null, null))
+            .firstInList { null != it && it % 2 == 0 }
+            .test().await().assertComplete().assertNoValues()
+    }
+
+    @Test
     fun test003() {
-        val latch = CountDownLatch(6)
+        val latch = CountDownLatch(8)
         val d = Observable
             .just(1, 2, 3, 4, 5).autoSubscribe {
+                doOnStart { latch.countDown() }
                 doOnNext { latch.countDown() }
                 doOnComplete { latch.countDown() }
+                doOnFinish { latch.countDown() }
             }
         latch.await()
         Assert.assertTrue(d.isDisposed)

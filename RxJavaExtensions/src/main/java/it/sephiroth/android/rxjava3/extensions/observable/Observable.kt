@@ -20,6 +20,7 @@ import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import it.sephiroth.android.rxjava3.extensions.operators.ObservableMapNotNull
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.function.Predicate
 
 
 /**
@@ -54,6 +55,16 @@ fun <T> Observable<List<T>>.firstInList(): Maybe<T> {
  */
 fun <T> Observable<List<T>>.firstInListNotNull(): Maybe<T> {
     return this.firstOrError().filter { it.isNotEmpty() }.mapOptional { Optional.ofNullable(it.firstOrNull { item -> item != null }) }
+}
+
+/**
+ * If the original [Observable] returns a [List] of items, this transformer will
+ * convert the Observable into a [Maybe] which emit the very first item that match the predicate.
+ *
+ * @since 3.0.5
+ */
+fun <T> Observable<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T> {
+    return this.firstOrError().mapOptional { list -> Optional.ofNullable(list.firstOrNull { item -> predicate.test(item) }) }
 }
 
 
