@@ -2,10 +2,8 @@ package it.sephiroth.android.rxjava3.extensions
 
 import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
-import it.sephiroth.android.rxjava3.extensions.observable.firstInList
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSingleObserver
 import it.sephiroth.android.rxjava3.extensions.single.*
 import org.junit.Assert
@@ -143,6 +141,14 @@ class SingleAndroidTest {
         Single.just(listOf(1, 2, 3, null, 5)).asObservable().test().await().assertComplete().assertValues(1, 2, 3, 5)
         Single.just(listOf(1, 2, 3, null)).asObservable().test().await().assertComplete().assertValues(1, 2, 3)
         Single.just(listOf(null, null)).asObservable().test().await().assertComplete().assertNoValues()
+    }
+
+    @Test
+    fun test011() {
+        Single.just(listOf(1, 2, 3, 4, 5)).firstInList { it % 2 == 0 }.test().await().assertComplete().assertValue(2)
+        Single.just(emptyList<Int>()).firstInList { it % 2 == 0 }.test().await().assertComplete().assertNoValues()
+        Single.just(listOf(null, 1, 2)).firstInList { null != it && it % 2 == 0 }.test().await().assertComplete().assertValue(2)
+        Single.just(listOf<Int?>(null, null)).firstInList { null != it && it % 2 == 0 }.test().await().assertComplete().assertNoValues()
     }
 
     companion object {

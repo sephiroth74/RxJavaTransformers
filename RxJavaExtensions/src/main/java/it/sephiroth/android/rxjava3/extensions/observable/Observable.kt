@@ -42,6 +42,8 @@ import io.reactivex.rxjava3.schedulers.Schedulers
 import it.sephiroth.android.rxjava3.extensions.MuteException
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import it.sephiroth.android.rxjava3.extensions.operators.ObservableMapNotNull
+import it.sephiroth.android.rxjava3.extensions.single.firstInList
+import it.sephiroth.android.rxjava3.extensions.single.firstInListNotNull
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.function.Predicate
@@ -68,7 +70,7 @@ fun <T> Observable<T>.toSingle(): Single<T> where T : Any {
  * if the list contains at least one element.
  */
 fun <T> Observable<List<T>>.firstInList(): Maybe<T> {
-    return this.firstOrError().filter { it.isNotEmpty() }.map { it.first() }
+    return this.toSingle().firstInList()
 }
 
 /**
@@ -78,7 +80,7 @@ fun <T> Observable<List<T>>.firstInList(): Maybe<T> {
  * @since 3.0.5
  */
 fun <T> Observable<List<T>>.firstInListNotNull(): Maybe<T> {
-    return this.firstOrError().filter { it.isNotEmpty() }.mapOptional { Optional.ofNullable(it.firstOrNull { item -> item != null }) }
+    return this.toSingle().firstInListNotNull()
 }
 
 /**
@@ -88,7 +90,7 @@ fun <T> Observable<List<T>>.firstInListNotNull(): Maybe<T> {
  * @since 3.0.5
  */
 fun <T> Observable<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T> {
-    return this.firstOrError().mapOptional { list -> Optional.ofNullable(list.firstOrNull { item -> predicate.test(item) }) }
+    return this.toSingle().firstInList(predicate)
 }
 
 

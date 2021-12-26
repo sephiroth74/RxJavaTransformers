@@ -37,6 +37,7 @@ import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.functions.Function
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSingleObserver
 import java.util.*
+import java.util.function.Predicate
 
 
 /**
@@ -46,23 +47,32 @@ import java.util.*
  */
 
 /**
- * If the [Single] returns a [List] of items, this transformer will
- * convert the source into a [Maybe] which will emit the very first item of the list,
+ * If the source [Single] returns a [List] of items, this transformer will
+ * convert the Single into a [Maybe] which emit the very first item of the list,
  * if the list contains at least one element.
  */
 fun <T> Single<List<T>>.firstInList(): Maybe<T> {
     return this.filter { it.isNotEmpty() }.map { it.first() }
 }
 
-
 /**
- * If the [Single] returns a [List] of items, this transformer will
- * convert the source into a [Maybe] which will emit the very first non null item of the list.
+ * If the source [Single] returns a [List] of items, this transformer will
+ * convert the Single into a [Maybe] which emit the very first non null item of the list.
  *
  * @since 3.0.5
  */
 fun <T> Single<List<T>>.firstInListNotNull(): Maybe<T> {
     return this.filter { it.isNotEmpty() }.mapOptional { Optional.ofNullable(it.firstOrNull { item -> item != null }) }
+}
+
+/**
+ * If the source [Single] returns a [List] of items, this transformer will
+ * convert the Single into a [Maybe] which emit the very first item that match the predicate.
+ *
+ * @since 3.0.5
+ */
+fun <T> Single<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T> {
+    return this.mapOptional { list -> Optional.ofNullable(list.firstOrNull { item -> predicate.test(item) }) }
 }
 
 /**
