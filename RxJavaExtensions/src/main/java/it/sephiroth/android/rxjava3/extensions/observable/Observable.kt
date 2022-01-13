@@ -35,11 +35,13 @@ import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Scheduler
 import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.functions.BiFunction
 import io.reactivex.rxjava3.functions.Function
 import io.reactivex.rxjava3.kotlin.Observables
 import io.reactivex.rxjava3.plugins.RxJavaPlugins
 import io.reactivex.rxjava3.schedulers.Schedulers
 import it.sephiroth.android.rxjava3.extensions.MuteException
+import it.sephiroth.android.rxjava3.extensions.RetryException
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import it.sephiroth.android.rxjava3.extensions.operators.ObservableMapNotNull
 import it.sephiroth.android.rxjava3.extensions.single.firstInList
@@ -213,4 +215,24 @@ fun <T> Observable<T>.debugWithThread(tag: String): Observable<T> where T : Any 
         .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
         .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
         .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
+}
+
+/**
+ * Retry the source observable with a delay.
+ * @param maxAttempts maximum number of attempts
+ * @param predicate predicate which given the current attempt number and the source exception should return the next delay to start a new attempt.
+ *                  The return value is in milliseconds
+ * @throws [RetryException] when the total number of attempts have been reached
+ * @since 3.0.6
+ */
+fun <T> Observable<T>.retryWhen(maxAttempts: Int, predicate: BiFunction<Throwable, Int, Long>): Observable<T> where T : Any {
+    return this.retryWhen { observable ->
+        observable.zipWith(Observable.range(1, maxAttempts + 1)) { throwable, retryCount ->
+            if (retryCount > maxAttempts) {
+                throw RetryException(throwable)
+            } else {
+                predicate.apply(throwable, retryCount)
+            }
+        }.flatMap { delay -> Observable.timer(delay, TimeUnit.MILLISECONDS) }
+    }
 }

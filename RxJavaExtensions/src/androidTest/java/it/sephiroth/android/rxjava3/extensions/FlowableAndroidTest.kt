@@ -14,9 +14,11 @@ import org.junit.Assert
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 
 /**
@@ -368,6 +370,73 @@ class FlowableAndroidTest {
         Flowable.just(listOf<Int?>(null, null))
             .firstInList { null != it && it % 2 == 0 }
             .test().await().assertComplete().assertNoValues()
+    }
+
+    @Test
+    fun test016() {
+        val now = System.currentTimeMillis()
+        val finalTime = AtomicLong()
+        val maxAttempts = 5
+
+        Flowable.create<String>({ emitter ->
+            if (!emitter.isCancelled) {
+                val delta = System.currentTimeMillis() - now
+                println("[${Date()}] emitting the exception. delta = $delta")
+                if (delta >= TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2)) {
+                    emitter.onNext("Emitting next Value!")
+                    emitter.onComplete()
+                } else {
+                    emitter.tryOnError(IllegalStateException("Error emitting [$delta]"))
+                }
+            }
+        }, BackpressureStrategy.BUFFER).retryWhen(maxAttempts) { _, retryCount ->
+            println("[${Date()}] predicate[$retryCount - $maxAttempts]")
+            TimeUnit.SECONDS.toMillis(1) // retry every 1 second
+        }.subscribeOn(Schedulers.single())
+            .doOnNext {
+                println("[${Date()}] onNext")
+            }.doOnComplete {
+                println("[${Date()}] onComplete")
+                finalTime.set(System.currentTimeMillis() - now)
+            }.doOnError {
+                println("[${Date()}] onError(${it.javaClass})")
+            }
+            .test()
+            .await()
+            .assertComplete()
+
+        Assert.assertTrue("final time must be >= ${maxAttempts / 2} seconds but it was ${finalTime.get()}", finalTime.get() >= TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2))
+        Assert.assertTrue("final time must be < ${(maxAttempts / 2) + 1} seconds but it was ${finalTime.get()}", finalTime.get() < TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2 + 1))
+    }
+
+
+    @Test
+    fun test017() {
+        val now = System.currentTimeMillis()
+        val finalTime = AtomicLong()
+        val maxAttempts = 10
+
+        Flowable.create<String>({ emitter ->
+            if (!emitter.isCancelled) {
+                println("[${Date()}] emitting the exception")
+                emitter.tryOnError(IllegalStateException("Error"))
+            }
+        }, BackpressureStrategy.BUFFER).retryWhen(maxAttempts) { throwable, retryCount ->
+            println("[${Date()}] predicate[$retryCount -- $maxAttempts] (throwable: ${throwable.javaClass})")
+            (retryCount * 100).toLong()
+        }.subscribeOn(Schedulers.single())
+            .doOnNext {
+                println("[${Date()}] onNext")
+            }.doOnComplete {
+                println("[${Date()}] onComplete")
+                finalTime.set(System.currentTimeMillis() - now)
+            }.doOnError {
+                println("[${Date()}] onError")
+                finalTime.set(System.currentTimeMillis() - now)
+            }
+            .test()
+            .await()
+            .assertError(RetryException::class.java)
     }
 
     companion object {

@@ -30,6 +30,9 @@ import android.annotation.SuppressLint
 import android.util.Log
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.functions.BiFunction
+import it.sephiroth.android.rxjava3.extensions.RetryException
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableCompletableObserver
 import java.util.concurrent.TimeUnit
 
@@ -78,6 +81,25 @@ fun delay(delay: Long, unit: TimeUnit, action: () -> Unit): AutoDisposableComple
     }
 }
 
+/**
+ * Retry the source observable with a delay.
+ * @param maxAttempts maximum number of attempts
+ * @param predicate predicate which given the current attempt number and the source exception should return the next delay to start a new attempt.
+ *                  The return value is in milliseconds
+ * @throws [RetryException] when the total number of attempts have been reached
+ * @since 3.0.6
+ */
+fun Completable.retryWhen(maxAttempts: Int, predicate: BiFunction<Throwable, Int, Long>): Completable {
+    return this.retryWhen { flowable ->
+        flowable.zipWith(Flowable.range(1, maxAttempts + 1)) { throwable, retryCount ->
+            if (retryCount > maxAttempts) {
+                throw RetryException(throwable)
+            } else {
+                predicate.apply(throwable, retryCount)
+            }
+        }.flatMap { delay -> Flowable.timer(delay, TimeUnit.MILLISECONDS) }
+    }
+}
 
 @SuppressLint("LogNotTimber")
 fun Completable.debug(tag: String): Completable {

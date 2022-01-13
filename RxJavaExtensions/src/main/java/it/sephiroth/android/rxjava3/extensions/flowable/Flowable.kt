@@ -36,8 +36,10 @@ import io.reactivex.rxjava3.annotations.SchedulerSupport
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.functions.BiFunction
 import io.reactivex.rxjava3.functions.Function
 import io.reactivex.rxjava3.plugins.RxJavaPlugins
+import it.sephiroth.android.rxjava3.extensions.RetryException
 import it.sephiroth.android.rxjava3.extensions.observable.autoSubscribe
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSubscriber
@@ -261,4 +263,26 @@ fun <T> Flowable<List<T>>.firstInListNotNull(): Maybe<T> {
  */
 fun <T> Flowable<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T> {
     return this.toSingle().firstInList(predicate)
+}
+
+/**
+ * Retry the source observable with a delay.
+ * @param maxAttempts maximum number of attempts
+ * @param predicate predicate which given the current attempt number and the source exception should return the next delay to start a new attempt.
+ *                  The return value is in milliseconds
+ * @throws [RetryException] when the total number of attempts have been reached
+ * @since 3.0.6
+ */
+fun <T> Flowable<T>.retryWhen(maxAttempts: Int, predicate: BiFunction<Throwable, Int, Long>): Flowable<T> where T : Any {
+    return this.retryWhen { flowable ->
+        flowable.zipWith(Flowable.range(1, maxAttempts + 1)) { throwable, retryCount ->
+            if (retryCount > maxAttempts) {
+                throw RetryException(throwable)
+            } else {
+                predicate.apply(throwable, retryCount)
+            }
+        }.flatMap { delay ->
+            Flowable.timer(delay, TimeUnit.MILLISECONDS)
+        }
+    }
 }

@@ -10,7 +10,10 @@ import org.junit.Assert
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.*
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
 
 /**
@@ -150,6 +153,70 @@ class SingleAndroidTest {
         Single.just(listOf(null, 1, 2)).firstInList { null != it && it % 2 == 0 }.test().await().assertComplete().assertValue(2)
         Single.just(listOf<Int?>(null, null)).firstInList { null != it && it % 2 == 0 }.test().await().assertComplete().assertNoValues()
     }
+
+
+    @Test
+    fun test012() {
+        val now = System.currentTimeMillis()
+        val finalTime = AtomicLong()
+        val maxAttempts = 5
+
+        Single.create<String> { emitter ->
+            if (!emitter.isDisposed) {
+                val delta = System.currentTimeMillis() - now
+                println("[${Date()}] emitting the exception. delta = $delta")
+                if (delta >= TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2)) {
+                    emitter.onSuccess("Emitting next Value!")
+                } else {
+                    emitter.tryOnError(IllegalStateException("Error emitting [$delta]"))
+                }
+            }
+        }.retryWhen(maxAttempts) { _, retryCount ->
+            println("[${Date()}] predicate[$retryCount - $maxAttempts]")
+            TimeUnit.SECONDS.toMillis(1) // retry every 1 second
+        }.subscribeOn(Schedulers.single())
+            .doOnSuccess {
+                println("[${Date()}] onComplete")
+                finalTime.set(System.currentTimeMillis() - now)
+            }.doOnError {
+                println("[${Date()}] onError(${it.javaClass})")
+            }
+            .test()
+            .await()
+            .assertComplete()
+
+        Assert.assertTrue("final time must be >= ${maxAttempts / 2} seconds but it was ${finalTime.get()}", finalTime.get() >= TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2))
+        Assert.assertTrue("final time must be < ${(maxAttempts / 2) + 1} seconds but it was ${finalTime.get()}", finalTime.get() < TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2 + 1))
+    }
+
+
+    @Test
+    fun test013() {
+        val now = System.currentTimeMillis()
+        val finalTime = AtomicLong()
+        val maxAttempts = 10
+
+        Single.create<String> { emitter ->
+            if (!emitter.isDisposed) {
+                println("[${Date()}] emitting the exception")
+                emitter.tryOnError(IllegalStateException("Error"))
+            }
+        }.retryWhen(maxAttempts) { throwable, retryCount ->
+            println("[${Date()}] predicate[$retryCount -- $maxAttempts] (throwable: ${throwable.javaClass})")
+            (retryCount * 100).toLong()
+        }.subscribeOn(Schedulers.single())
+            .doOnSuccess {
+                println("[${Date()}] onComplete")
+                finalTime.set(System.currentTimeMillis() - now)
+            }.doOnError {
+                println("[${Date()}] onError")
+                finalTime.set(System.currentTimeMillis() - now)
+            }
+            .test()
+            .await()
+            .assertError(RetryException::class.java)
+    }
+
 
     companion object {
         private lateinit var ioThread: Thread

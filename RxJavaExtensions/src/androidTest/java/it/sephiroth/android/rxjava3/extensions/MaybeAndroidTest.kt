@@ -4,16 +4,16 @@ import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.schedulers.Schedulers
-import it.sephiroth.android.rxjava3.extensions.maybe.autoSubscribe
-import it.sephiroth.android.rxjava3.extensions.maybe.debug
-import it.sephiroth.android.rxjava3.extensions.maybe.debugWithThread
-import it.sephiroth.android.rxjava3.extensions.maybe.observeMain
+import it.sephiroth.android.rxjava3.extensions.maybe.*
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableMaybeObserver
 import org.junit.Assert
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.*
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
 
 /**
@@ -139,7 +139,68 @@ class MaybeAndroidTest {
         disposable = Maybe.error<Int>(RuntimeException()).debug("m3").debugWithThread("m3-thread").doOnError { latch.countDown() }.autoSubscribe()
         latch.await()
         Assert.assertTrue(disposable.isDisposed)
+    }
 
+    @Test
+    fun test007() {
+        val now = System.currentTimeMillis()
+        val finalTime = AtomicLong()
+        val maxAttempts = 5
+
+        Maybe.create<String> { emitter ->
+            if (!emitter.isDisposed) {
+                val delta = System.currentTimeMillis() - now
+                println("[${Date()}] emitting the exception. delta = $delta")
+                if (delta >= TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2)) {
+                    emitter.onSuccess("Emitting next Value!")
+                } else {
+                    emitter.tryOnError(IllegalStateException("Error emitting [$delta]"))
+                }
+            }
+        }.retryWhen(maxAttempts) { _, retryCount ->
+            println("[${Date()}] predicate[$retryCount - $maxAttempts]")
+            TimeUnit.SECONDS.toMillis(1) // retry every 1 second
+        }.subscribeOn(Schedulers.single())
+            .doOnSuccess {
+                println("[${Date()}] onComplete")
+                finalTime.set(System.currentTimeMillis() - now)
+            }.doOnError {
+                println("[${Date()}] onError(${it.javaClass})")
+            }
+            .test()
+            .await()
+            .assertComplete()
+
+        Assert.assertTrue("final time must be >= ${maxAttempts / 2} seconds but it was ${finalTime.get()}", finalTime.get() >= TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2))
+        Assert.assertTrue("final time must be < ${(maxAttempts / 2) + 1} seconds but it was ${finalTime.get()}", finalTime.get() < TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2 + 1))
+    }
+
+
+    @Test
+    fun test008() {
+        val now = System.currentTimeMillis()
+        val finalTime = AtomicLong()
+        val maxAttempts = 10
+
+        Maybe.create<String> { emitter ->
+            if (!emitter.isDisposed) {
+                println("[${Date()}] emitting the exception")
+                emitter.tryOnError(IllegalStateException("Error"))
+            }
+        }.retryWhen(maxAttempts) { throwable, retryCount ->
+            println("[${Date()}] predicate[$retryCount -- $maxAttempts] (throwable: ${throwable.javaClass})")
+            (retryCount * 100).toLong()
+        }.subscribeOn(Schedulers.single())
+            .doOnSuccess {
+                println("[${Date()}] onComplete")
+                finalTime.set(System.currentTimeMillis() - now)
+            }.doOnError {
+                println("[${Date()}] onError")
+                finalTime.set(System.currentTimeMillis() - now)
+            }
+            .test()
+            .await()
+            .assertError(RetryException::class.java)
     }
 
     companion object {
