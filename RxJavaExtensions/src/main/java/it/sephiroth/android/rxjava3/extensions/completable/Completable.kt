@@ -77,7 +77,7 @@ fun Completable.observeMain(): Completable {
  * Trigger a delayed action (invoked on the main thread by default)
  */
 fun delay(delay: Long, unit: TimeUnit, action: () -> Unit): Disposable {
-    return if(delay > 0) {
+    return if(delay <= 0L) {
         action.invoke()
         Completable.complete().subscribe()
     } else {
