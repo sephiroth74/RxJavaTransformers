@@ -31,6 +31,7 @@ import android.util.Log
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.functions.BiFunction
 import it.sephiroth.android.rxjava3.extensions.RetryException
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableCompletableObserver
@@ -75,9 +76,14 @@ fun Completable.observeMain(): Completable {
 /**
  * Trigger a delayed action (invoked on the main thread by default)
  */
-fun delay(delay: Long, unit: TimeUnit, action: () -> Unit): AutoDisposableCompletableObserver {
-    return Completable.complete().delay(delay, unit).observeMain().autoSubscribe {
-        doOnComplete { action.invoke() }
+fun delay(delay: Long, unit: TimeUnit, action: () -> Unit): Disposable {
+    return if(delay > 0) {
+        action.invoke()
+        Completable.complete().subscribe()
+    } else {
+        Completable.complete().delay(delay, unit).observeMain().autoSubscribe {
+            doOnComplete { action.invoke() }
+        }
     }
 }
 
