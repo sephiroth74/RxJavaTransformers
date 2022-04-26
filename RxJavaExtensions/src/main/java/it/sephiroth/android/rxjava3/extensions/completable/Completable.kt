@@ -86,7 +86,7 @@ fun delay(delay: Long, unit: TimeUnit, action: () -> Unit): Disposable {
  */
 fun delay(delay: Long, unit: TimeUnit, scheduler: Scheduler, action: () -> Unit): Disposable {
     return if (delay <= 0L) {
-        action.invoke()
+        scheduler.scheduleDirect(action)
         Completable.complete().subscribe()
     } else {
         Completable.complete().delay(delay, unit).observeOn(scheduler).autoSubscribe {

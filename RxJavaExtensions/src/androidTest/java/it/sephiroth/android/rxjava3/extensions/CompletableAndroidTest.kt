@@ -9,6 +9,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers
 import it.sephiroth.android.rxjava3.extensions.completable.*
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableCompletableObserver
 import org.junit.Assert
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.*
@@ -236,5 +237,53 @@ class CompletableAndroidTest {
             .test()
             .await()
             .assertError(RetryException::class.java)
+    }
+
+    @Test
+    fun test018() {
+        val latch = CountDownLatch(3)
+
+        delay(0, TimeUnit.MILLISECONDS, Schedulers.io()) {
+            println("delay {0} completed on thread ${Thread.currentThread().name}")
+            Assert.assertEquals(Thread.currentThread(), ioThread)
+            latch.countDown()
+        }
+
+        delay(100, TimeUnit.MILLISECONDS, Schedulers.single()) {
+            println("delay {100} completed on thread ${Thread.currentThread().name}")
+            Assert.assertEquals(Thread.currentThread(), singleThread)
+            latch.countDown()
+        }
+
+        delay(200, TimeUnit.MILLISECONDS) {
+            println("delay {200} completed on thread ${Thread.currentThread().name}")
+            Assert.assertEquals(Thread.currentThread(), Looper.getMainLooper().thread)
+            latch.countDown()
+        }
+
+        latch.await()
+    }
+
+    companion object {
+        private lateinit var ioThread: Thread
+        private lateinit var singleThread: Thread
+
+        @JvmStatic
+        @BeforeClass
+        fun before() {
+            val latch = CountDownLatch(2)
+
+            Schedulers.single().scheduleDirect {
+                singleThread = Thread.currentThread()
+                latch.countDown()
+            }
+
+            Schedulers.io().scheduleDirect {
+                ioThread = Thread.currentThread()
+                latch.countDown()
+            }
+            latch.await()
+
+        }
     }
 }
