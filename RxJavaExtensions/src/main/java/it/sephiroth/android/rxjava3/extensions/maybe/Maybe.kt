@@ -47,26 +47,26 @@ import java.util.concurrent.TimeUnit
 /**
  * Subscribe to this [Maybe] using an instance of the [AutoDisposableMaybeObserver]
  */
-fun <T> Maybe<T>.autoSubscribe(observer: AutoDisposableMaybeObserver<T>): AutoDisposableMaybeObserver<T> {
+fun <T : Any> Maybe<T>.autoSubscribe(observer: AutoDisposableMaybeObserver<T>): AutoDisposableMaybeObserver<T> {
     return this.subscribeWith(observer)
 }
 
 /**
  * Subscribe to this [Maybe] source using an anonymous instance of the [AutoDisposableMaybeObserver]
  */
-fun <T> Maybe<T>.autoSubscribe(): AutoDisposableMaybeObserver<T> = this.autoSubscribe(AutoDisposableMaybeObserver())
+fun <T : Any> Maybe<T>.autoSubscribe(): AutoDisposableMaybeObserver<T> = this.autoSubscribe(AutoDisposableMaybeObserver())
 
 /**
  * @see [autoSubscribe]
  */
-fun <T> Maybe<T>.autoSubscribe(builder: (AutoDisposableMaybeObserver<T>.() -> Unit)): AutoDisposableMaybeObserver<T> {
+fun <T : Any> Maybe<T>.autoSubscribe(builder: (AutoDisposableMaybeObserver<T>.() -> Unit)): AutoDisposableMaybeObserver<T> {
     return this.subscribeWith(AutoDisposableMaybeObserver(builder))
 }
 
 /**
  * alias for Maybe.observeOn(AndroidSchedulers.mainThread())
  */
-fun <T> Maybe<T>.observeMain(): Maybe<T> {
+fun <T : Any> Maybe<T>.observeMain(): Maybe<T> {
     return observeOn(AndroidSchedulers.mainThread())
 }
 
@@ -92,21 +92,21 @@ fun <T> Maybe<T>.retryWhen(maxAttempts: Int, predicate: BiFunction<Throwable, In
 
 
 @SuppressLint("LogNotTimber")
-fun <T> Maybe<T>.debug(tag: String): Maybe<T> {
+fun <T : Any> Maybe<T>.debug(tag: String): Maybe<T> {
     return this
-        .doOnSuccess { Log.v(tag, "onSuccess($it)") }
-        .doOnError { Log.e(tag, "onError(${it.message})") }
-        .doOnSubscribe { Log.v(tag, "onSubscribe()") }
-        .doOnComplete { Log.v(tag, "onComplete()") }
-        .doOnDispose { Log.w(tag, "onDispose()") }
+            .doOnSuccess { Log.v(tag, "onSuccess($it)") }
+            .doOnError { Log.e(tag, "onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+            .doOnComplete { Log.v(tag, "onComplete()") }
+            .doOnDispose { Log.w(tag, "onDispose()") }
 }
 
 @SuppressLint("LogNotTimber")
-fun <T> Maybe<T>.debugWithThread(tag: String): Maybe<T> {
+fun <T : Any> Maybe<T>.debugWithThread(tag: String): Maybe<T> {
     return this
-        .doOnSuccess { Log.v(tag, "[${Thread.currentThread().name}] onSuccess()") }
-        .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
-        .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
-        .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
-        .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
+            .doOnSuccess { Log.v(tag, "[${Thread.currentThread().name}] onSuccess()") }
+            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+            .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
+            .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
 }

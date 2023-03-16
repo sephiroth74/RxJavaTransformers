@@ -45,7 +45,6 @@ import it.sephiroth.android.rxjava3.extensions.RetryException
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import it.sephiroth.android.rxjava3.extensions.operators.ObservableMapNotNull
 import it.sephiroth.android.rxjava3.extensions.single.firstInList
-import it.sephiroth.android.rxjava3.extensions.single.firstInListNotNull
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.function.Predicate
@@ -71,18 +70,8 @@ fun <T> Observable<T>.toSingle(): Single<T> where T : Any {
  * convert the Observable into a [Maybe] which emit the very first item of the list,
  * if the list contains at least one element.
  */
-fun <T> Observable<List<T>>.firstInList(): Maybe<T> {
+fun <T : Any> Observable<List<T>>.firstInList(): Maybe<T> {
     return this.toSingle().firstInList()
-}
-
-/**
- * If the original [Observable] returns a [List] of items, this transformer will
- * convert the Observable into a [Maybe] which emit the very first non null item of the list.
- *
- * @since 3.0.5
- */
-fun <T> Observable<List<T>>.firstInListNotNull(): Maybe<T> {
-    return this.toSingle().firstInListNotNull()
 }
 
 /**
@@ -91,7 +80,7 @@ fun <T> Observable<List<T>>.firstInListNotNull(): Maybe<T> {
  *
  * @since 3.0.5
  */
-fun <T> Observable<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T> {
+fun <T : Any> Observable<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T> {
     return this.toSingle().firstInList(predicate)
 }
 
@@ -127,28 +116,28 @@ fun <T> Observable<T>.observeMain(): Observable<T> where T : Any {
  * @param timeUnit time unit for the [delayBeforeRetry] param
  */
 fun <T> Observable<T>.retry(
-    predicate: (Throwable) -> Boolean,
-    maxRetry: Int,
-    delayBeforeRetry: Long,
-    timeUnit: TimeUnit
+        predicate: (Throwable) -> Boolean,
+        maxRetry: Int,
+        delayBeforeRetry: Long,
+        timeUnit: TimeUnit
 ): Observable<T> where T : Any =
-    retryWhen { observable ->
-        Observables.zip(
-            observable.map { if (predicate(it)) it else throw it },
-            Observable.interval(delayBeforeRetry, timeUnit)
-        ).map { if (it.second >= maxRetry) throw it.first }
-    }
+        retryWhen { observable ->
+            Observables.zip(
+                    observable.map { if (predicate(it)) it else throw it },
+                    Observable.interval(delayBeforeRetry, timeUnit)
+            ).map { if (it.second >= maxRetry) throw it.first }
+        }
 
 /**
  * Returns an Observable that emits the source observable every [time]. The source observable is triggered immediately
  * and all the consecutive calls after the time specified
  */
 fun <T> Observable<T>.refreshEvery(
-    time: Long,
-    timeUnit: TimeUnit,
-    scheduler: Scheduler = Schedulers.computation()
+        time: Long,
+        timeUnit: TimeUnit,
+        scheduler: Scheduler = Schedulers.computation()
 ): Observable<T> where T : Any =
-    Observable.interval(0, time, timeUnit, scheduler).flatMap { this }
+        Observable.interval(0, time, timeUnit, scheduler).flatMap { this }
 
 /**
  * Returns an Observable that emits the source observable every time the [publisher] observable emits true
@@ -172,12 +161,12 @@ fun <R, T> Observable<List<T>>.mapList(mapper: Function<in T, out R>): Observabl
  */
 fun <T> Observable<T>.muteUntil(delay: Long, unit: TimeUnit, func: () -> Boolean): Observable<T> where T : Any {
     return this.doOnNext { if (func()) throw MuteException() }
-        .retryWhen { t: Observable<Throwable> ->
-            t.flatMap { error: Throwable ->
-                if (error is MuteException) Observable.timer(delay, unit)
-                else Observable.error(error)
+            .retryWhen { t: Observable<Throwable> ->
+                t.flatMap { error: Throwable ->
+                    if (error is MuteException) Observable.timer(delay, unit)
+                    else Observable.error(error)
+                }
             }
-        }
 }
 
 /**
@@ -192,29 +181,30 @@ fun <T> Observable<T>.muteUntil(delay: Long, unit: TimeUnit, func: () -> Boolean
  */
 @CheckReturnValue
 @SchedulerSupport(SchedulerSupport.NONE)
-fun <T, R> Observable<T>.mapNotNull(mapper: Function<in T, R?>): Observable<R> where T : Any, R : Any {
+fun <T, R> Observable<T>.mapNotNull(mapper: java.util.function.Function<in T, R?>): Observable<R> where T : Any, R : Any {
     Objects.requireNonNull(mapper, "mapper is null")
-    return RxJavaPlugins.onAssembly(ObservableMapNotNull(this, mapper))
+    val o = ObservableMapNotNull(this, mapper)
+    return RxJavaPlugins.onAssembly(o)
 }
 
 @SuppressLint("LogNotTimber")
 fun <T> Observable<T>.debug(tag: String): Observable<T> where T : Any {
     return this
-        .doOnNext { Log.v(tag, "onNext($it)") }
-        .doOnError { Log.e(tag, "onError(${it.message})") }
-        .doOnSubscribe { Log.v(tag, "onSubscribe()") }
-        .doOnComplete { Log.v(tag, "onComplete()") }
-        .doOnDispose { Log.w(tag, "onDispose()") }
+            .doOnNext { Log.v(tag, "onNext($it)") }
+            .doOnError { Log.e(tag, "onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+            .doOnComplete { Log.v(tag, "onComplete()") }
+            .doOnDispose { Log.w(tag, "onDispose()") }
 }
 
 @SuppressLint("LogNotTimber")
 fun <T> Observable<T>.debugWithThread(tag: String): Observable<T> where T : Any {
     return this
-        .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
-        .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
-        .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
-        .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
-        .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
+            .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
+            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+            .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
+            .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
 }
 
 /**

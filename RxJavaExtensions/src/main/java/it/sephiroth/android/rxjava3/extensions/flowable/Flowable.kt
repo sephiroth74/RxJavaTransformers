@@ -45,7 +45,6 @@ import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSubscriber
 import it.sephiroth.android.rxjava3.extensions.operators.FlowableMapNotNull
 import it.sephiroth.android.rxjava3.extensions.single.firstInList
-import it.sephiroth.android.rxjava3.extensions.single.firstInListNotNull
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.function.Predicate
@@ -76,25 +75,25 @@ fun <T> Flowable<T>.autoSubscribe(builder: (AutoDisposableSubscriber<T>.() -> Un
 @SuppressLint("LogNotTimber")
 fun <T> Flowable<T>.debug(tag: String): Flowable<T> where T : Any {
     return this
-        .doOnNext { Log.v(tag, "onNext($it)") }
-        .doOnError { Log.e(tag, "onError(${it.message})") }
-        .doOnSubscribe { Log.v(tag, "onSubscribe()") }
-        .doOnComplete { Log.v(tag, "onComplete()") }
-        .doOnCancel { Log.w(tag, "onCancel()") }
-        .doOnRequest { Log.w(tag, "onRequest()") }
-        .doOnTerminate { Log.w(tag, "onTerminate()") }
+            .doOnNext { Log.v(tag, "onNext($it)") }
+            .doOnError { Log.e(tag, "onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+            .doOnComplete { Log.v(tag, "onComplete()") }
+            .doOnCancel { Log.w(tag, "onCancel()") }
+            .doOnRequest { Log.w(tag, "onRequest()") }
+            .doOnTerminate { Log.w(tag, "onTerminate()") }
 }
 
 @SuppressLint("LogNotTimber")
 fun <T> Flowable<T>.debugWithThread(tag: String): Flowable<T> where T : Any {
     return this
-        .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
-        .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
-        .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
-        .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
-        .doOnCancel { Log.w(tag, "[${Thread.currentThread().name}] onCancel()") }
-        .doOnRequest { Log.w(tag, "[${Thread.currentThread().name}] onRequest()") }
-        .doOnTerminate { Log.w(tag, "[${Thread.currentThread().name}] onTerminate()") }
+            .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
+            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+            .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
+            .doOnCancel { Log.w(tag, "[${Thread.currentThread().name}] onCancel()") }
+            .doOnRequest { Log.w(tag, "[${Thread.currentThread().name}] onRequest()") }
+            .doOnTerminate { Log.w(tag, "[${Thread.currentThread().name}] onTerminate()") }
 }
 
 /**
@@ -114,9 +113,9 @@ fun <T> Flowable<T>.observeMain(): Flowable<T> where T : Any {
  *
  */
 fun <T : Any> Flowable<T>.skipBetween(
-    time: Long,
-    unit: TimeUnit,
-    defaultOpened: Boolean
+        time: Long,
+        unit: TimeUnit,
+        defaultOpened: Boolean
 ): Flowable<T> {
     var t: Long = if (defaultOpened) 0 else System.currentTimeMillis()
     return this.filter {
@@ -219,7 +218,7 @@ fun <R, T> Flowable<List<T>>.mapList(mapper: Function<in T, out R>): Flowable<Li
 @Suppress("UPPER_BOUND_VIOLATED_BASED_ON_JAVA_ANNOTATIONS")
 @CheckReturnValue
 @SchedulerSupport(SchedulerSupport.NONE)
-fun <T, R> Flowable<T>.mapNotNull(mapper: Function<in T, R?>): Flowable<R> where T : Any, R : Any {
+fun <T, R> Flowable<T>.mapNotNull(mapper: java.util.function.Function<in T, R?>): Flowable<R> where T : Any, R : Any {
     Objects.requireNonNull(mapper, "mapper is null")
     return RxJavaPlugins.onAssembly(FlowableMapNotNull(this, mapper))
 }
@@ -239,21 +238,9 @@ fun <T> Flowable<T>.toSingle(): Single<T> where T : Any {
  * if the list contains at least one element.
  * @since 3.0.5
  */
-fun <T> Flowable<List<T>>.firstInList(): Maybe<T> {
+fun <T : Any> Flowable<List<T>>.firstInList(): Maybe<T> {
     return this.toSingle().firstInList()
 }
-
-
-/**
- * If the source [Flowable] returns a [List] of items, this transformer will
- * convert the Flowable into a [Maybe] which emit the very first non null item of the list.
- *
- * @since 3.0.5
- */
-fun <T> Flowable<List<T>>.firstInListNotNull(): Maybe<T> {
-    return this.toSingle().firstInListNotNull()
-}
-
 
 /**
  * If the source [Flowable] returns a [List] of items, this transformer will
@@ -261,7 +248,7 @@ fun <T> Flowable<List<T>>.firstInListNotNull(): Maybe<T> {
  *
  * @since 3.0.5
  */
-fun <T> Flowable<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T> {
+fun <T : Any> Flowable<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T> {
     return this.toSingle().firstInList(predicate)
 }
 

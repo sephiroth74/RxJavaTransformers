@@ -55,18 +55,8 @@ import java.util.function.Predicate
  * convert the Single into a [Maybe] which emit the very first item of the list,
  * if the list contains at least one element.
  */
-fun <T> Single<List<T>>.firstInList(): Maybe<T> {
+fun <T : Any> Single<List<T>>.firstInList(): Maybe<T> {
     return this.filter { it.isNotEmpty() }.map { it.first() }
-}
-
-/**
- * If the source [Single] returns a [List] of items, this transformer will
- * convert the Single into a [Maybe] which emit the very first non null item of the list.
- *
- * @since 3.0.5
- */
-fun <T> Single<List<T>>.firstInListNotNull(): Maybe<T> {
-    return this.filter { it.isNotEmpty() }.mapOptional { Optional.ofNullable(it.firstOrNull { item -> item != null }) }
 }
 
 /**
@@ -75,7 +65,7 @@ fun <T> Single<List<T>>.firstInListNotNull(): Maybe<T> {
  *
  * @since 3.0.5
  */
-fun <T> Single<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T> {
+fun <T : Any> Single<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T> {
     return this.mapOptional { list -> Optional.ofNullable(list.firstOrNull { item -> predicate.test(item) }) }
 }
 
@@ -122,11 +112,10 @@ fun <R, T> Single<List<T>>.mapList(mapper: Function<in T, out R>): Single<List<R
  *
  * @since 3.0.5
  */
-@Suppress("UPPER_BOUND_VIOLATED_BASED_ON_JAVA_ANNOTATIONS")
-fun <T> Single<List<T>>.asObservable(): Observable<T> {
+fun <T : Any> Single<List<T>>.asObservable(): Observable<T> {
     return this.flatMapObservable { list ->
-        Observable.create<T> { emitter ->
-            list.mapNotNull { it }.forEach { if (!emitter.isDisposed) emitter.onNext(it) }
+        Observable.create { emitter ->
+            list.map { it }.forEach { if (!emitter.isDisposed) emitter.onNext(it) }
             if (!emitter.isDisposed) emitter.onComplete()
         }
     }
@@ -161,17 +150,17 @@ fun <T> Single<T>.retryWhen(maxAttempts: Int, predicate: BiFunction<Throwable, I
 @SuppressLint("LogNotTimber")
 fun <T> Single<T>.debug(tag: String): Single<T> where T : Any {
     return this
-        .doOnError { Log.e(tag, "onError(${it.message})") }
-        .doOnSubscribe { Log.v(tag, "onSubscribe()") }
-        .doOnSuccess { Log.v(tag, "onSuccess()") }
-        .doOnDispose { Log.w(tag, "onDispose()") }
+            .doOnError { Log.e(tag, "onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+            .doOnSuccess { Log.v(tag, "onSuccess()") }
+            .doOnDispose { Log.w(tag, "onDispose()") }
 }
 
 @SuppressLint("LogNotTimber")
 fun <T> Single<T>.debugWithThread(tag: String): Single<T> where T : Any {
     return this
-        .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
-        .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
-        .doOnSuccess { Log.v(tag, "[${Thread.currentThread().name}] onSuccess()") }
-        .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
+            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+            .doOnSuccess { Log.v(tag, "[${Thread.currentThread().name}] onSuccess()") }
+            .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
 }

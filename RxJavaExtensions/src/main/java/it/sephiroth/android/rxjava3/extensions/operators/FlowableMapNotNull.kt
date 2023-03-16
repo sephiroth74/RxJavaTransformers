@@ -25,18 +25,17 @@
 package it.sephiroth.android.rxjava3.extensions.operators
 
 import io.reactivex.rxjava3.core.Flowable
-import io.reactivex.rxjava3.functions.Function
 import io.reactivex.rxjava3.internal.subscribers.BasicFuseableSubscriber
 import io.reactivex.rxjava3.operators.ConditionalSubscriber
 import org.reactivestreams.Subscriber
 
-class FlowableMapNotNull<T : Any, R : Any>(val source: Flowable<T>, val mapper: Function<in T, out R?>) : Flowable<R>() {
+class FlowableMapNotNull<T : Any, R : Any>(val source: Flowable<T>, val mapper: java.util.function.Function<in T, out R?>) : Flowable<R>() {
     override fun subscribeActual(s: Subscriber<in R>) {
         source.subscribe(MapOptionalSubscriber(s, mapper))
     }
 
-    internal class MapOptionalSubscriber<T : Any, R>(downstream: Subscriber<in R>?, val mapper: Function<in T, out R?>) :
-        BasicFuseableSubscriber<T, R>(downstream), ConditionalSubscriber<T> {
+    internal class MapOptionalSubscriber<T : Any, R>(downstream: Subscriber<in R>?, val mapper: java.util.function.Function<in T, out R?>) :
+            BasicFuseableSubscriber<T, R>(downstream), ConditionalSubscriber<T> {
         override fun onNext(t: T) {
             if (!tryOnNext(t)) {
                 upstream.request(1)
