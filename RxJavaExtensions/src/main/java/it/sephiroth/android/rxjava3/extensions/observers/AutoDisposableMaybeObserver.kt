@@ -34,7 +34,7 @@ import io.reactivex.rxjava3.observers.DisposableMaybeObserver
  * @author Alessandro Crugnola on 06.01.21 - 13:26
  */
 @Suppress("unused")
-class AutoDisposableMaybeObserver<T>() : DisposableMaybeObserver<T>() {
+class AutoDisposableMaybeObserver<T : Any>() : DisposableMaybeObserver<T>() {
 
     private var _doOnSuccess: ((T) -> Unit)? = null
     private var _doOnError: ((Throwable) -> Unit)? = null
