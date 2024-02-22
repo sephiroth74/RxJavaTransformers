@@ -27,9 +27,11 @@
 
 package it.sephiroth.android.rxjava3.extensions.context
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.os.Handler
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
@@ -57,17 +59,25 @@ fun Context.observeBroadcasts(
     permission: String? = null,
     scheduler: Handler? = null
 ): Observable<Intent> {
-    val filter = IntentFilter()
-    action.forEach { filter.addAction(it) }
-    dataScheme?.let { filter.addDataScheme(it) }
-    return observeBroadcasts(filter, permission, scheduler)
+    val intentFilter = IntentFilter().also { filter ->
+        action.forEach { filter.addAction(it) }
+        dataScheme?.let { filter.addDataScheme(it) }
+    }
+    return observeBroadcasts(
+        intentFilter = intentFilter,
+        permission = permission,
+        scheduler = scheduler
+    )
 }
 
+@SuppressLint("UnspecifiedRegisterReceiverFlag")
 fun Context.observeBroadcasts(
     intentFilter: IntentFilter,
     permission: String? = null,
-    scheduler: Handler? = null
+    scheduler: Handler? = null,
+    receiverFlags: Int? = null,
 ): Observable<Intent> {
+    println("observeBroadcasts(intent=$intentFilter)")
     val observable = Observable.create { observer ->
         var receiver: BroadcastReceiverObserver? = BroadcastReceiverObserver(observer)
         observer.setDisposable(Disposable.fromRunnable {
@@ -79,7 +89,22 @@ fun Context.observeBroadcasts(
                 }; receiver = null
             }
         })
-        registerReceiver(receiver, intentFilter, permission, scheduler)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(
+                /* receiver = */
+                receiver,
+                /* filter = */
+                intentFilter,
+                /* broadcastPermission = */
+                permission,
+                /* scheduler = */
+                scheduler,
+                /* flags = */
+                receiverFlags ?: Context.RECEIVER_NOT_EXPORTED
+            )
+        } else {
+            registerReceiver(receiver, intentFilter, permission, scheduler)
+        }
     }
 
     return observable

@@ -53,8 +53,8 @@ class ObservableAndroidTest {
             .test().await().assertComplete().assertNoValues()
 
         Observable.just(listOf(0, 1, 2))
-            .firstInList { it % 2 == 0 }
-            .test().await().assertComplete().assertValue(2)
+            .firstInList { it % 2 == 1 }
+            .test().await().assertComplete().assertValue(1)
     }
 
     @Test
