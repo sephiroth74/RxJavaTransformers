@@ -8,21 +8,21 @@ jobs:
     executor:
       name: android/android-machine
       resource-class: large
+      tag: default
     steps:
       - checkout
 
-      - android/start-emulator-and-run-tests:
-          verbose: true
+      - android/create-avd:
+          avd-name: myavd
+          install: true
+          system-image: system-images;android-29;default;x86
+
+      - android/start-emulator:
           avd-name: myavd
           no-window: true
-          no-audio: true
-          no-boot-anim: true
           restore-gradle-cache-prefix: v1a
-          wait-for-emulator: true
-          system-image: system-images;android-29;default;x86
-          test-command: ./gradlew --info test testDebugUnitTestCoverage
-          #test-command: ./gradlew test createDebugCoverageReport
-
+      #          test-command: ./gradlew --info test testDebugUnitTestCoverage
+      - android/run-tests
       - android/save-gradle-cache:
           cache-prefix: v1a
 
@@ -39,7 +39,10 @@ jobs:
           command: ./gradlew coveralls
 
   build:
-    executor: android/android
+    executor:
+      name: android/android-machine
+      resource-class: large
+      tag: default
 
     steps:
       - checkout
@@ -81,11 +84,4 @@ workflows:
       - build
       - test
 
-#      - android/run-ui-tests:
-#          executor:
-#            name: android/android-machine
-#            resource-class: medium
-#          wait-for-emulator: true
-#          test-command: ./gradlew connectedCheck createDebugCoverageReport
-#          system-image: system-images;android-28;default;x86
 
