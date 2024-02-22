@@ -30,6 +30,8 @@ package it.sephiroth.android.rxjava3.extensions.context
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Handler
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import it.sephiroth.android.rxjava3.extensions.observers.BroadcastReceiverObserver
@@ -46,17 +48,27 @@ import it.sephiroth.android.rxjava3.extensions.observers.BroadcastReceiverObserv
  * Once an action is received, the result [Observable] will trigger a new [Intent]
  */
 fun Context.observeBroadcasts(vararg action: String): Observable<Intent> {
-    val filter = IntentFilter()
-    action.forEach { filter.addAction(it) }
-    return observeBroadcasts(filter)
+    return observeBroadcasts(*action, dataScheme = null, permission = null, scheduler = null)
 }
 
-/**
- * @see [observeBroadcasts]
- */
-@Suppress("TooGenericExceptionCaught")
-fun Context.observeBroadcasts(intentFilter: IntentFilter): Observable<Intent> {
-    val observable = Observable.create<Intent> { observer ->
+fun Context.observeBroadcasts(
+    vararg action: String,
+    dataScheme: String? = null,
+    permission: String? = null,
+    scheduler: Handler? = null
+): Observable<Intent> {
+    val filter = IntentFilter()
+    action.forEach { filter.addAction(it) }
+    dataScheme?.let { filter.addDataScheme(it) }
+    return observeBroadcasts(filter, permission, scheduler)
+}
+
+fun Context.observeBroadcasts(
+    intentFilter: IntentFilter,
+    permission: String? = null,
+    scheduler: Handler? = null
+): Observable<Intent> {
+    val observable = Observable.create { observer ->
         var receiver: BroadcastReceiverObserver? = BroadcastReceiverObserver(observer)
         observer.setDisposable(Disposable.fromRunnable {
             receiver?.let {
@@ -64,11 +76,13 @@ fun Context.observeBroadcasts(intentFilter: IntentFilter): Observable<Intent> {
                     unregisterReceiver(it)
                 } catch (t: Throwable) {
                     t.printStackTrace()
-                }
-                receiver = null
+                }; receiver = null
             }
         })
-        registerReceiver(receiver, intentFilter)
+        registerReceiver(receiver, intentFilter, permission, scheduler)
     }
+
     return observable
+        .subscribeOn(AndroidSchedulers.mainThread())
+        .observeOn(AndroidSchedulers.mainThread())
 }

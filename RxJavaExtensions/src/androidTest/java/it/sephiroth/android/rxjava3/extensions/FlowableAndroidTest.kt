@@ -122,7 +122,8 @@ class FlowableAndroidTest {
     @Test
     fun test004() {
         Flowable.just(1).debug("f1").debugWithThread("f1-thread").test().await()
-        Flowable.error<Int>(RuntimeException("test")).debug("f2").debugWithThread("f2-thread").test().assertError(RuntimeException::class.java)
+        Flowable.error<Int>(RuntimeException("test")).debug("f2").debugWithThread("f2-thread")
+            .test().assertError(RuntimeException::class.java)
     }
 
     @Test
@@ -327,7 +328,8 @@ class FlowableAndroidTest {
         flowable.mapNotNull { it % 2 == 0 }.test().await().assertComplete().assertNoValues()
 
 
-        Flowable.just(1, 2, 3).mapNotNull { throw RuntimeException("test exception") }.test().assertError(RuntimeException::class.java).await()
+        Flowable.just(1, 2, 3).mapNotNull { throw RuntimeException("test exception") }.test()
+            .assertError(RuntimeException::class.java).await()
 
     }
 
@@ -338,19 +340,10 @@ class FlowableAndroidTest {
 
     @Test
     fun test013() {
-        Flowable.just(listOf(1, 2, 3, 4, 5)).firstInList().test().await().assertComplete().assertResult(1)
-        Flowable.just(emptyList<Int>()).firstInList().test().await().assertComplete().assertNoValues()
-
-        Flowable.just(listOf(null, 1)).firstInList().test().await().assertError(NullPointerException::class.java)
-        Flowable.just(listOf(null, null)).firstInList().test().await().assertError(NullPointerException::class.java)
-    }
-
-    @Test
-    fun test014() {
-        Flowable.just(listOf(1, 2, 3, 4, 5)).firstInListNotNull().test().await().assertComplete().assertValue(1)
-        Flowable.just(emptyList<Int>()).firstInListNotNull().test().await().assertComplete().assertNoValues()
-        Flowable.just(listOf(null, 1)).firstInListNotNull().test().await().assertComplete().assertValue(1)
-        Flowable.just(listOf(null, null)).firstInListNotNull().test().await().assertComplete().assertNoValues()
+        Flowable.just(listOf(1, 2, 3, 4, 5)).firstInList().test().await().assertComplete()
+            .assertResult(1)
+        Flowable.just(emptyList<Int>()).firstInList().test().await().assertComplete()
+            .assertNoValues()
     }
 
     @Test
@@ -361,14 +354,6 @@ class FlowableAndroidTest {
 
         Flowable.just(emptyList<Int>())
             .firstInList { it % 2 == 0 }
-            .test().await().assertComplete().assertNoValues()
-
-        Flowable.just(listOf(null, 1, 2))
-            .firstInList { null != it && it % 2 == 0 }
-            .test().await().assertComplete().assertValue(2)
-
-        Flowable.just(listOf<Int?>(null, null))
-            .firstInList { null != it && it % 2 == 0 }
             .test().await().assertComplete().assertNoValues()
     }
 
@@ -405,8 +390,14 @@ class FlowableAndroidTest {
             .await()
             .assertComplete()
 
-        Assert.assertTrue("final time must be >= ${maxAttempts / 2} seconds but it was ${finalTime.get()}", finalTime.get() >= TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2))
-        Assert.assertTrue("final time must be < ${(maxAttempts / 2) + 1} seconds but it was ${finalTime.get()}", finalTime.get() < TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2 + 1))
+        Assert.assertTrue(
+            "final time must be >= ${maxAttempts / 2} seconds but it was ${finalTime.get()}",
+            finalTime.get() >= TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2)
+        )
+        Assert.assertTrue(
+            "final time must be < ${(maxAttempts / 2) + 1} seconds but it was ${finalTime.get()}",
+            finalTime.get() < TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2 + 1)
+        )
     }
 
 

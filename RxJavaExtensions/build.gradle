@@ -7,23 +7,23 @@ plugins {
 }
 
 group "it.sephiroth.android.library"
-version "3.0.16"
+version "3.0.17"
 
 coveralls {
     jacocoReportPath 'build/reports/coverage/androidTest/debug/report.xml'
 }
 
 jacoco {
-    toolVersion = "0.8.8"
+    toolVersion = "0.8.10"
 }
 
 
 android {
-    compileSdkVersion 31
+    compileSdk 34
 
     defaultConfig {
-        minSdkVersion 24
-        targetSdkVersion 31
+        minSdk 24
+        targetSdk 34
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         consumerProguardFiles "consumer-rules.pro"
@@ -55,8 +55,8 @@ android {
     // https://issuetracker.google.com/issues/178400721
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     lintOptions {
@@ -64,30 +64,30 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = '11'
+        jvmTarget = '17'
     }
 
     namespace 'it.sephiroth.android.rxjava3.extensions'
 }
 
 dependencies {
-    api 'io.reactivex.rxjava3:rxjava:3.1.6'
+    api 'io.reactivex.rxjava3:rxjava:3.1.8'
     api 'io.reactivex.rxjava3:rxandroid:3.0.2'
     api 'io.reactivex.rxjava3:rxkotlin:3.0.1'
 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+//    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     implementation 'com.jakewharton.timber:timber:5.0.1'
 
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
 
-configurations.all {
+configurations.configureEach {
     resolutionStrategy.eachDependency {
         if (requested.group == "org.jacoco") {
-            useVersion("0.8.7")
+            useVersion("0.8.10")
         }
     }
 }
@@ -110,7 +110,7 @@ afterEvaluate {
 def setupAndroidReporting() {
     println("setupAndroidReporting")
 
-    tasks.withType(Test) {
+    tasks.withType(Test).configureEach {
         // Whether or not classes without source location should be instrumented
         jacoco.includeNoLocationClasses = true
         jacoco.excludes = ['jdk.internal.*']
@@ -205,19 +205,7 @@ def setupAndroidReporting() {
                 sourceDirectories.setFrom(files(coverageSourceDirs))
                 additionalSourceDirs.setFrom(files(coverageSourceDirs))
 
-//                android.sourceSets.each {
-//                    println("sourceSet: $it.srcDirs")
-//                    sourceSets.add(it)
-//                }
-
-                reports {
-                    csv.enabled false // change if needed
-                    xml.enabled false // change if needed
-                    html {
-                        enabled true
-                        destination file("${buildDir}/reports/coverage-report")
-                    }
-                }
+                reports {}
 
                 def parentTaskName = "create${buildTypeName.capitalize()}CoverageReport"
 
