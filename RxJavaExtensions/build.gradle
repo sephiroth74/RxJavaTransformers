@@ -7,7 +7,7 @@ plugins {
 }
 
 group "it.sephiroth.android.library"
-version "3.0.17"
+version "3.0.20"
 
 coveralls {
     jacocoReportPath 'build/reports/coverage/androidTest/debug/report.xml'
@@ -74,8 +74,6 @@ dependencies {
     api 'io.reactivex.rxjava3:rxjava:3.1.8'
     api 'io.reactivex.rxjava3:rxandroid:3.0.2'
     api 'io.reactivex.rxjava3:rxkotlin:3.0.1'
-
-//    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     implementation 'com.jakewharton.timber:timber:5.0.1'
 
