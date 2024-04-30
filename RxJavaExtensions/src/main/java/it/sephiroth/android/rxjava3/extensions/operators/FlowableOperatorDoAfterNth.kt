@@ -30,7 +30,6 @@ class FlowableOperatorDoAfterNth<T : Any>(val action: Function<T, Unit>, val nth
             override fun onComplete() {
                 subscriber.onComplete()
             }
-
         }
     }
 }

@@ -680,6 +680,48 @@ class ObservableAndroidTest {
         Assert.assertEquals(9, afterFirst.get())
     }
 
+    @Test
+    fun test023() {
+        val now = System.currentTimeMillis()
+        val finalTime = AtomicLong()
+
+        val first = AtomicLong()
+        val afterFirst = AtomicLong()
+        val afterSecond = AtomicLong()
+        val nextCount = AtomicLong()
+        val fifth = AtomicLong()
+
+        Observable.just(1, 2, 3)
+            .doOnFirst {
+                first.incrementAndGet()
+            }
+            .doAfterFirst {
+                afterFirst.incrementAndGet()
+            }
+            .doOnNth(5) {
+                fifth.incrementAndGet()
+            }
+            .doAfterNth(1) {
+                afterSecond.incrementAndGet()
+            }
+            .doOnNext {
+                nextCount.incrementAndGet()
+            }.doOnComplete {
+                finalTime.set(System.currentTimeMillis() - now)
+            }.doOnError {
+                finalTime.set(System.currentTimeMillis() - now)
+            }
+            .test()
+            .await()
+            .assertComplete()
+
+        Assert.assertEquals(3, nextCount.get())
+        Assert.assertEquals(1, first.get())
+        Assert.assertEquals(2, afterFirst.get())
+        Assert.assertEquals(1, afterSecond.get())
+        Assert.assertEquals(0, fifth.get())
+    }
+
     companion object {
         private lateinit var ioThread: Thread
         private lateinit var singleThread: Thread

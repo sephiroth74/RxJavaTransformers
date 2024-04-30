@@ -38,7 +38,6 @@ import it.sephiroth.android.rxjava3.extensions.RetryException
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableCompletableObserver
 import java.util.concurrent.TimeUnit
 
-
 /**
  * RxJavaExtensions
  *
@@ -56,7 +55,9 @@ fun Completable.autoSubscribe(observer: AutoDisposableCompletableObserver): Auto
 /**
  * @see [autoSubscribe]
  */
-fun Completable.autoSubscribe(builder: (AutoDisposableCompletableObserver.() -> Unit)): AutoDisposableCompletableObserver {
+fun Completable.autoSubscribe(
+    builder: (AutoDisposableCompletableObserver.() -> Unit)
+): AutoDisposableCompletableObserver {
     return this.subscribeWith(AutoDisposableCompletableObserver(builder))
 }
 

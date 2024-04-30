@@ -50,13 +50,11 @@ import java.util.Objects
 import java.util.concurrent.TimeUnit
 import java.util.function.Predicate
 
-
 /**
  * RxJavaExtensions
  *
  * @author Alessandro Crugnola on 06.01.21 - 13:35
  */
-
 
 /**
  * Converts an [Observable] into a [Single]
@@ -64,7 +62,6 @@ import java.util.function.Predicate
 fun <T> Observable<T>.toSingle(): Single<T> where T : Any {
     return this.firstOrError()
 }
-
 
 /**
  * If the original [Observable] returns a [List] of items, this transformer will
@@ -85,7 +82,6 @@ fun <T : Any> Observable<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T>
     return this.toSingle().firstInList(predicate)
 }
 
-
 /**
  * Subscribe the source using an instance of the [AutoDisposableObserver].
  * The source will be disposed when a complete or error event is received.
@@ -97,7 +93,9 @@ fun <T> Observable<T>.autoSubscribe(observer: AutoDisposableObserver<T>): AutoDi
 /**
  * @see [autoSubscribe]
  */
-fun <T> Observable<T>.autoSubscribe(builder: (AutoDisposableObserver<T>.() -> Unit)): AutoDisposableObserver<T> where T : Any {
+fun <T> Observable<T>.autoSubscribe(
+    builder: (AutoDisposableObserver<T>.() -> Unit)
+): AutoDisposableObserver<T> where T : Any {
     return this.subscribeWith(AutoDisposableObserver(builder))
 }
 
@@ -147,7 +145,6 @@ fun <T> Observable<T>.autoRefresh(publisher: Observable<Boolean>): Observable<T>
     return publisher.filter { it }.flatMap { this }
 }
 
-
 /**
  * Converts the elements of a list of an Observable
  */
@@ -186,7 +183,9 @@ fun <T> Observable<T>.muteUntil(
  */
 @CheckReturnValue
 @SchedulerSupport(SchedulerSupport.NONE)
-fun <T, R> Observable<T>.mapNotNull(mapper: java.util.function.Function<in T, R?>): Observable<R> where T : Any, R : Any {
+fun <T, R> Observable<T>.mapNotNull(
+    mapper: java.util.function.Function<in T, R?>
+): Observable<R> where T : Any, R : Any {
     Objects.requireNonNull(mapper, "mapper is null")
     val o = ObservableMapNotNull(this, mapper)
     return RxJavaPlugins.onAssembly(o)
@@ -236,8 +235,13 @@ fun <T> Observable<T>.retryWhen(
 }
 
 fun <T : Any> Observable<T>.doOnFirst(action: (T) -> Unit): Observable<T> =
-    compose(ObservableTransformers.doOnFirst { action.invoke(it) })
+    compose(ObservableTransformers.doOnFirst(action))
+
+fun <T : Any> Observable<T>.doOnNth(nth: Long, action: (T) -> Unit): Observable<T> =
+    compose(ObservableTransformers.doOnNth(nth, action))
+
+fun <T : Any> Observable<T>.doAfterNth(nth: Long, action: (T) -> Unit): Observable<T> =
+    compose(ObservableTransformers.doAfterNth(nth, action))
 
 fun <T : Any> Observable<T>.doAfterFirst(action: (T) -> Unit): Observable<T> =
-    compose(ObservableTransformers.doAfterFirst { action.invoke(it) })
-
+    compose(ObservableTransformers.doAfterFirst(action))

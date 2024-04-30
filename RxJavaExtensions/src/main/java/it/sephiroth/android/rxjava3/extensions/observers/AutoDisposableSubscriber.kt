@@ -26,7 +26,6 @@ package it.sephiroth.android.rxjava3.extensions.observers
 
 import io.reactivex.rxjava3.subscribers.DisposableSubscriber
 
-
 /**
  * Auto Disposable Observer.
  * Upon completion, or error, will automatically unsubscribe from the

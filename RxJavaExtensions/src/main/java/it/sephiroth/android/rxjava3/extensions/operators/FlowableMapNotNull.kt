@@ -35,7 +35,7 @@ class FlowableMapNotNull<T : Any, R : Any>(val source: Flowable<T>, val mapper: 
     }
 
     internal class MapOptionalSubscriber<T : Any, R>(downstream: Subscriber<in R>?, val mapper: java.util.function.Function<in T, out R?>) :
-            BasicFuseableSubscriber<T, R>(downstream), ConditionalSubscriber<T> {
+        BasicFuseableSubscriber<T, R>(downstream), ConditionalSubscriber<T> {
         override fun onNext(t: T) {
             if (!tryOnNext(t)) {
                 upstream.request(1)

@@ -31,7 +31,6 @@ import android.content.Context
 import android.content.Intent
 import io.reactivex.rxjava3.core.ObservableEmitter
 
-
 /**
  * RxJavaExtensions
  *

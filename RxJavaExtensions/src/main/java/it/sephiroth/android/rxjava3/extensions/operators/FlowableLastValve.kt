@@ -82,7 +82,6 @@ internal class FlowableLastValve<T>(
         @Volatile
         var gate: Boolean = defaultOpen
 
-
         @Volatile
         var cancelled = false
         override fun onSubscribe(s: Subscription) {

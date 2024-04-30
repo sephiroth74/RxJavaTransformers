@@ -1,0 +1,39 @@
+import org.gradle.api.internal.tasks.DefaultTaskContainer
+import org.gradle.api.plugins.quality.internal.AbstractCodeQualityPlugin
+
+apply plugin: "io.gitlab.arturbosch.detekt"
+
+detekt {
+    parallel = false
+    toolVersion = "1.23.6"
+    config = files("${rootProject.rootDir}/config/rules/detekt/rules-detekt.yml")
+    autoCorrect = true
+}
+
+tasks.named("detekt").configure {
+    reports {
+        html.required.set(true)
+        html.outputLocation.set(file("build/reports/detekt.html"))
+
+        txt.required.set(true)
+        txt.outputLocation.set(file("build/reports/detekt.txt"))
+
+        sarif.required.set(false)
+        md.required.set(false)
+        xml.required.set(false)
+    }
+
+    exclude '*Test.kt'
+}
+
+check.configure {
+    dependsOn = dependsOn.findAll {
+        if (DefaultTaskContainer.TaskCreatingProvider.isInstance(it)) {
+            it.name != 'detekt'
+        } else {
+            true
+        }
+    }
+}
+
+check.dependsOn("detekt")

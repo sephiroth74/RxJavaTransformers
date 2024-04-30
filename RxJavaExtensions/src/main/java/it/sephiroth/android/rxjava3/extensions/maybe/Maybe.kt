@@ -36,13 +36,11 @@ import it.sephiroth.android.rxjava3.extensions.RetryException
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableMaybeObserver
 import java.util.concurrent.TimeUnit
 
-
 /**
  * RxJavaExtensions
  *
  * @author Alessandro Crugnola on 06.01.21 - 13:35
  */
-
 
 /**
  * Subscribe to this [Maybe] using an instance of the [AutoDisposableMaybeObserver]
@@ -59,7 +57,9 @@ fun <T : Any> Maybe<T>.autoSubscribe(): AutoDisposableMaybeObserver<T> = this.au
 /**
  * @see [autoSubscribe]
  */
-fun <T : Any> Maybe<T>.autoSubscribe(builder: (AutoDisposableMaybeObserver<T>.() -> Unit)): AutoDisposableMaybeObserver<T> {
+fun <T : Any> Maybe<T>.autoSubscribe(
+    builder: (AutoDisposableMaybeObserver<T>.() -> Unit)
+): AutoDisposableMaybeObserver<T> {
     return this.subscribeWith(AutoDisposableMaybeObserver(builder))
 }
 
@@ -90,23 +90,22 @@ fun <T> Maybe<T>.retryWhen(maxAttempts: Int, predicate: BiFunction<Throwable, In
     }
 }
 
-
 @SuppressLint("LogNotTimber")
 fun <T : Any> Maybe<T>.debug(tag: String): Maybe<T> {
     return this
-            .doOnSuccess { Log.v(tag, "onSuccess($it)") }
-            .doOnError { Log.e(tag, "onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
-            .doOnComplete { Log.v(tag, "onComplete()") }
-            .doOnDispose { Log.w(tag, "onDispose()") }
+        .doOnSuccess { Log.v(tag, "onSuccess($it)") }
+        .doOnError { Log.e(tag, "onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+        .doOnComplete { Log.v(tag, "onComplete()") }
+        .doOnDispose { Log.w(tag, "onDispose()") }
 }
 
 @SuppressLint("LogNotTimber")
 fun <T : Any> Maybe<T>.debugWithThread(tag: String): Maybe<T> {
     return this
-            .doOnSuccess { Log.v(tag, "[${Thread.currentThread().name}] onSuccess()") }
-            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
-            .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
-            .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
+        .doOnSuccess { Log.v(tag, "[${Thread.currentThread().name}] onSuccess()") }
+        .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+        .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
+        .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
 }

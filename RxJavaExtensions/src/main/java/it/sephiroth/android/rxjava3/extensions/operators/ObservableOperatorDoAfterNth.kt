@@ -16,7 +16,6 @@ class ObservableOperatorDoAfterNth<T : Any>(val action: Function<T, Unit>, val n
             override fun onNext(t: T) {
                 if (count++ > nth) {
                     action.apply(t)
-                } else {
                 }
                 observer.onNext(t)
             }

@@ -43,7 +43,6 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.function.Predicate
 
-
 /**
  * RxJavaExtensions
  *
@@ -72,14 +71,18 @@ fun <T : Any> Single<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T> {
 /**
  * Subscribe to this [Single] using an instance of the [AutoDisposableSingleObserver]
  */
-fun <T> Single<T>.autoSubscribe(observer: AutoDisposableSingleObserver<T>): AutoDisposableSingleObserver<T> where T : Any {
+fun <T> Single<T>.autoSubscribe(
+    observer: AutoDisposableSingleObserver<T>
+): AutoDisposableSingleObserver<T> where T : Any {
     return this.subscribeWith(observer)
 }
 
 /**
  * @see [autoSubscribe]
  */
-fun <T> Single<T>.autoSubscribe(builder: (AutoDisposableSingleObserver<T>.() -> Unit)): AutoDisposableSingleObserver<T> where T : Any {
+fun <T> Single<T>.autoSubscribe(
+    builder: (AutoDisposableSingleObserver<T>.() -> Unit)
+): AutoDisposableSingleObserver<T> where T : Any {
     return this.subscribeWith(AutoDisposableSingleObserver(builder))
 }
 
@@ -96,7 +99,6 @@ fun <T> Single<T>.autoSubscribe(): AutoDisposableSingleObserver<T> where T : Any
 fun <T> Single<T>.observeMain(): Single<T> where T : Any {
     return observeOn(AndroidSchedulers.mainThread())
 }
-
 
 /**
  * Converts the elements of a list of a Single using the given mapper function
@@ -121,7 +123,6 @@ fun <T : Any> Single<List<T>>.asObservable(): Observable<T> {
     }
 }
 
-
 /**
  * Retry the source observable with a delay.
  * @param maxAttempts maximum number of attempts
@@ -142,7 +143,6 @@ fun <T> Single<T>.retryWhen(maxAttempts: Int, predicate: BiFunction<Throwable, I
     }
 }
 
-
 /**
  * Enable debug logs from a [Single], emitting
  * onNext, onError, onSubscribe and onComplete
@@ -150,17 +150,17 @@ fun <T> Single<T>.retryWhen(maxAttempts: Int, predicate: BiFunction<Throwable, I
 @SuppressLint("LogNotTimber")
 fun <T> Single<T>.debug(tag: String): Single<T> where T : Any {
     return this
-            .doOnError { Log.e(tag, "onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
-            .doOnSuccess { Log.v(tag, "onSuccess()") }
-            .doOnDispose { Log.w(tag, "onDispose()") }
+        .doOnError { Log.e(tag, "onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+        .doOnSuccess { Log.v(tag, "onSuccess()") }
+        .doOnDispose { Log.w(tag, "onDispose()") }
 }
 
 @SuppressLint("LogNotTimber")
 fun <T> Single<T>.debugWithThread(tag: String): Single<T> where T : Any {
     return this
-            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
-            .doOnSuccess { Log.v(tag, "[${Thread.currentThread().name}] onSuccess()") }
-            .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
+        .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+        .doOnSuccess { Log.v(tag, "[${Thread.currentThread().name}] onSuccess()") }
+        .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
 }

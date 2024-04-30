@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.absoluteValue
 import kotlin.math.ceil
 
-
 /**
  * RxJavaExtensions
  *

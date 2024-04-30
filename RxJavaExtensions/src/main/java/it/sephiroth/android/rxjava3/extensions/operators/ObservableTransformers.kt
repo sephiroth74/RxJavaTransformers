@@ -32,7 +32,6 @@ import io.reactivex.rxjava3.core.ObservableTransformer
 import io.reactivex.rxjava3.functions.Function
 import java.util.Objects
 
-
 /**
  * @author Alessandro Crugnola on 05.01.21 - 23:00
  */
@@ -68,7 +67,6 @@ object ObservableTransformers {
         return ObservableLastValve(other, defaultOpen)
     }
 
-
     @SchedulerSupport(SchedulerSupport.NONE)
     fun <T : Any> doOnNth(nth: Long, action: Function<T, Unit>): ObservableTransformer<T, T> {
         return ObservableTransformer { upstream -> upstream.lift(ObservableOperatorDoOnNth(action, nth)) }
@@ -103,5 +101,4 @@ object ObservableTransformers {
             )
         }
     }
-
 }

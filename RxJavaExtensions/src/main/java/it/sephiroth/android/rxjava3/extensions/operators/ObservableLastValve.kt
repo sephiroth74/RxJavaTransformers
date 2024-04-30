@@ -26,7 +26,6 @@
 
 package it.sephiroth.android.rxjava3.extensions.operators
 
-
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.ObservableSource
 import io.reactivex.rxjava3.core.ObservableTransformer
@@ -199,4 +198,3 @@ class ObservableLastValve<T>(
         }
     }
 }
-

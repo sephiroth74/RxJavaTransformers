@@ -34,7 +34,6 @@ import io.reactivex.rxjava3.internal.functions.ObjectHelper
 import org.reactivestreams.Publisher
 import java.util.Objects
 
-
 /**
  * RxJavaExtensions
  *
@@ -61,7 +60,7 @@ object FlowableTransformers {
      * @throws NullPointerException if `other` is null
      *
      * @since 3.0.1
-    </T> */
+     </T> */
     @SchedulerSupport(SchedulerSupport.NONE)
     @BackpressureSupport(BackpressureKind.PASS_THROUGH)
     fun <T> valveLast(other: Publisher<Boolean>): FlowableTransformer<T, T> where T : Any {
@@ -89,7 +88,6 @@ object FlowableTransformers {
         return FlowableLastValve(null, other, defaultOpen, bufferSize)
     }
 
-
     @SchedulerSupport(SchedulerSupport.NONE)
     fun <T : Any> doOnNth(nth: Long, action: Function<T, Unit>): FlowableTransformer<T, T> {
         return FlowableTransformer { upstream ->
@@ -116,7 +114,6 @@ object FlowableTransformers {
             )
         }
     }
-
 
     @BackpressureSupport(BackpressureKind.PASS_THROUGH)
     fun <T : Any> doOnFirst(action: Function<T, Unit>): FlowableTransformer<T, T> {

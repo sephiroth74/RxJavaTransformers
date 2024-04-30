@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-
 @file:Suppress("unused")
 
 package it.sephiroth.android.rxjava3.extensions.flowable
-
 
 import android.annotation.SuppressLint
 import android.util.Log
@@ -56,7 +54,6 @@ import java.util.function.Predicate
  * @author Alessandro Crugnola on 06.01.21 - 13:31
  */
 
-
 /**
  * Subscribe the source using an instance of the [AutoDisposableObserver].
  * The source will be disposed when a complete or error event is received.
@@ -68,10 +65,11 @@ fun <T> Flowable<T>.autoSubscribe(observer: AutoDisposableSubscriber<T>): AutoDi
 /**
  * @see [autoSubscribe]
  */
-fun <T> Flowable<T>.autoSubscribe(builder: (AutoDisposableSubscriber<T>.() -> Unit)): AutoDisposableSubscriber<T> where T : Any {
+fun <T> Flowable<T>.autoSubscribe(
+    builder: (AutoDisposableSubscriber<T>.() -> Unit)
+): AutoDisposableSubscriber<T> where T : Any {
     return this.subscribeWith(AutoDisposableSubscriber(builder))
 }
-
 
 @SuppressLint("LogNotTimber")
 fun <T> Flowable<T>.debug(tag: String): Flowable<T> where T : Any {
@@ -208,7 +206,6 @@ fun <R, T> Flowable<List<T>>.mapList(mapper: Function<in T, out R>): Flowable<Li
     return this.map { list -> list.map { mapper.apply(it) } }
 }
 
-
 /**
  * Similar to mapNotNull function of RxJava2.
  * Map the elements of the upstream Flowable using the [mapper] function and
@@ -226,7 +223,6 @@ fun <T, R> Flowable<T>.mapNotNull(mapper: java.util.function.Function<in T, R?>)
     Objects.requireNonNull(mapper, "mapper is null")
     return RxJavaPlugins.onAssembly(FlowableMapNotNull(this, mapper))
 }
-
 
 /**
  * Converts the source [Flowable] into a [Single]
@@ -282,7 +278,13 @@ fun <T> Flowable<T>.retryWhen(
 }
 
 fun <T : Any> Flowable<T>.doOnFirst(action: (T) -> Unit): Flowable<T> =
-    compose(FlowableTransformers.doOnFirst { action.invoke(it) })
+    compose(FlowableTransformers.doOnFirst(action))
 
 fun <T : Any> Flowable<T>.doAfterFirst(action: (T) -> Unit): Flowable<T> =
-    compose(FlowableTransformers.doAfterFirst { action.invoke(it) })
+    compose(FlowableTransformers.doAfterFirst(action))
+
+fun <T : Any> Flowable<T>.doOnNth(nth: Long, action: (T) -> Unit): Flowable<T> =
+    compose(FlowableTransformers.doOnNth(nth, action))
+
+fun <T : Any> Flowable<T>.doAfterNth(nth: Long, action: (T) -> Unit): Flowable<T> =
+    compose(FlowableTransformers.doAfterNth(nth, action))

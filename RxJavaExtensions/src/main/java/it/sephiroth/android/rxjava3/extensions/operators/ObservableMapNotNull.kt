@@ -28,17 +28,15 @@ import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Observer
 import java.util.function.Function
 
-
 /**
  * @author Alessandro Crugnola on 18.12.21 - 21:03
  */
 class ObservableMapNotNull<T : Any, R : Any>(
-        private val source: Observable<T>,
-        private val mapper: Function<in T, R?>
+    private val source: Observable<T>,
+    private val mapper: Function<in T, R?>
 ) : Observable<R>() {
 
     override fun subscribeActual(observer: Observer<in R>) {
         source.subscribe(MapNotNullObserver(observer, mapper))
     }
-
 }

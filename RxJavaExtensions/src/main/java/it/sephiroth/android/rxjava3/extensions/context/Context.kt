@@ -22,7 +22,6 @@
  * SOFTWARE.
  */
 
-
 @file:Suppress("unused")
 
 package it.sephiroth.android.rxjava3.extensions.context
@@ -37,7 +36,6 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import it.sephiroth.android.rxjava3.extensions.observers.BroadcastReceiverObserver
-
 
 /**
  * RxJavaExtensions
