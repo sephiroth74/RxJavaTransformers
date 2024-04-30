@@ -44,8 +44,9 @@ import it.sephiroth.android.rxjava3.extensions.MuteException
 import it.sephiroth.android.rxjava3.extensions.RetryException
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import it.sephiroth.android.rxjava3.extensions.operators.ObservableMapNotNull
+import it.sephiroth.android.rxjava3.extensions.operators.ObservableTransformers
 import it.sephiroth.android.rxjava3.extensions.single.firstInList
-import java.util.*
+import java.util.Objects
 import java.util.concurrent.TimeUnit
 import java.util.function.Predicate
 
@@ -116,28 +117,28 @@ fun <T> Observable<T>.observeMain(): Observable<T> where T : Any {
  * @param timeUnit time unit for the [delayBeforeRetry] param
  */
 fun <T> Observable<T>.retry(
-        predicate: (Throwable) -> Boolean,
-        maxRetry: Int,
-        delayBeforeRetry: Long,
-        timeUnit: TimeUnit
+    predicate: (Throwable) -> Boolean,
+    maxRetry: Int,
+    delayBeforeRetry: Long,
+    timeUnit: TimeUnit
 ): Observable<T> where T : Any =
-        retryWhen { observable ->
-            Observables.zip(
-                    observable.map { if (predicate(it)) it else throw it },
-                    Observable.interval(delayBeforeRetry, timeUnit)
-            ).map { if (it.second >= maxRetry) throw it.first }
-        }
+    retryWhen { observable ->
+        Observables.zip(
+            observable.map { if (predicate(it)) it else throw it },
+            Observable.interval(delayBeforeRetry, timeUnit)
+        ).map { if (it.second >= maxRetry) throw it.first }
+    }
 
 /**
  * Returns an Observable that emits the source observable every [time]. The source observable is triggered immediately
  * and all the consecutive calls after the time specified
  */
 fun <T> Observable<T>.refreshEvery(
-        time: Long,
-        timeUnit: TimeUnit,
-        scheduler: Scheduler = Schedulers.computation()
+    time: Long,
+    timeUnit: TimeUnit,
+    scheduler: Scheduler = Schedulers.computation()
 ): Observable<T> where T : Any =
-        Observable.interval(0, time, timeUnit, scheduler).flatMap { this }
+    Observable.interval(0, time, timeUnit, scheduler).flatMap { this }
 
 /**
  * Returns an Observable that emits the source observable every time the [publisher] observable emits true
@@ -159,14 +160,18 @@ fun <R, T> Observable<List<T>>.mapList(mapper: Function<in T, out R>): Observabl
 /**
  * Mute the source [Observable] until the predicate [func] returns true, retrying using the given [delay]
  */
-fun <T> Observable<T>.muteUntil(delay: Long, unit: TimeUnit, func: () -> Boolean): Observable<T> where T : Any {
+fun <T> Observable<T>.muteUntil(
+    delay: Long,
+    unit: TimeUnit,
+    func: () -> Boolean
+): Observable<T> where T : Any {
     return this.doOnNext { if (func()) throw MuteException() }
-            .retryWhen { t: Observable<Throwable> ->
-                t.flatMap { error: Throwable ->
-                    if (error is MuteException) Observable.timer(delay, unit)
-                    else Observable.error(error)
-                }
+        .retryWhen { t: Observable<Throwable> ->
+            t.flatMap { error: Throwable ->
+                if (error is MuteException) Observable.timer(delay, unit)
+                else Observable.error(error)
             }
+        }
 }
 
 /**
@@ -190,21 +195,21 @@ fun <T, R> Observable<T>.mapNotNull(mapper: java.util.function.Function<in T, R?
 @SuppressLint("LogNotTimber")
 fun <T> Observable<T>.debug(tag: String): Observable<T> where T : Any {
     return this
-            .doOnNext { Log.v(tag, "onNext($it)") }
-            .doOnError { Log.e(tag, "onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
-            .doOnComplete { Log.v(tag, "onComplete()") }
-            .doOnDispose { Log.w(tag, "onDispose()") }
+        .doOnNext { Log.v(tag, "onNext($it)") }
+        .doOnError { Log.e(tag, "onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+        .doOnComplete { Log.v(tag, "onComplete()") }
+        .doOnDispose { Log.w(tag, "onDispose()") }
 }
 
 @SuppressLint("LogNotTimber")
 fun <T> Observable<T>.debugWithThread(tag: String): Observable<T> where T : Any {
     return this
-            .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
-            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
-            .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
-            .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
+        .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
+        .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+        .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
+        .doOnDispose { Log.w(tag, "[${Thread.currentThread().name}] onDispose()") }
 }
 
 /**
@@ -215,7 +220,10 @@ fun <T> Observable<T>.debugWithThread(tag: String): Observable<T> where T : Any 
  * @throws [RetryException] when the total number of attempts have been reached
  * @since 3.0.6
  */
-fun <T> Observable<T>.retryWhen(maxAttempts: Int, predicate: BiFunction<Throwable, Int, Long>): Observable<T> where T : Any {
+fun <T> Observable<T>.retryWhen(
+    maxAttempts: Int,
+    predicate: BiFunction<Throwable, Int, Long>
+): Observable<T> where T : Any {
     return this.retryWhen { observable ->
         observable.zipWith(Observable.range(1, maxAttempts + 1)) { throwable, retryCount ->
             if (retryCount > maxAttempts) {
@@ -226,3 +234,10 @@ fun <T> Observable<T>.retryWhen(maxAttempts: Int, predicate: BiFunction<Throwabl
         }.flatMap { delay -> Observable.timer(delay, TimeUnit.MILLISECONDS) }
     }
 }
+
+fun <T : Any> Observable<T>.doOnFirst(action: (T) -> Unit): Observable<T> =
+    compose(ObservableTransformers.doOnFirst { action.invoke(it) })
+
+fun <T : Any> Observable<T>.doAfterFirst(action: (T) -> Unit): Observable<T> =
+    compose(ObservableTransformers.doAfterFirst { action.invoke(it) })
+

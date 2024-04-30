@@ -29,7 +29,8 @@ package it.sephiroth.android.rxjava3.extensions.operators
 import io.reactivex.rxjava3.annotations.SchedulerSupport
 import io.reactivex.rxjava3.core.ObservableSource
 import io.reactivex.rxjava3.core.ObservableTransformer
-import java.util.*
+import io.reactivex.rxjava3.functions.Function
+import java.util.Objects
 
 
 /**
@@ -59,9 +60,48 @@ object ObservableTransformers {
     }
 
     @SchedulerSupport(SchedulerSupport.NONE)
-    fun <T> valveLast(other: ObservableSource<Boolean>, defaultOpen: Boolean = true): ObservableTransformer<T, T> where T : Any {
+    fun <T> valveLast(
+        other: ObservableSource<Boolean>,
+        defaultOpen: Boolean = true
+    ): ObservableTransformer<T, T> where T : Any {
         Objects.requireNonNull(other, "other is null")
         return ObservableLastValve(other, defaultOpen)
+    }
+
+
+    @SchedulerSupport(SchedulerSupport.NONE)
+    fun <T : Any> doOnNth(nth: Long, action: Function<T, Unit>): ObservableTransformer<T, T> {
+        return ObservableTransformer { upstream -> upstream.lift(ObservableOperatorDoOnNth(action, nth)) }
+    }
+
+    @SchedulerSupport(SchedulerSupport.NONE)
+    fun <T : Any> doAfterNth(
+        nth: Long,
+        action: Function<T, Unit>
+    ): ObservableTransformer<T, T> {
+        return ObservableTransformer { upstream ->
+            upstream.lift(
+                ObservableOperatorDoAfterNth(
+                    action,
+                    nth
+                )
+            )
+        }
+    }
+
+    fun <T : Any> doOnFirst(action: Function<T, Unit>): ObservableTransformer<T, T> {
+        return ObservableTransformer { upstream -> upstream.lift(ObservableOperatorDoOnNth(action, 0)) }
+    }
+
+    fun <T : Any> doAfterFirst(action: Function<T, Unit>): ObservableTransformer<T, T> {
+        return ObservableTransformer { upstream ->
+            upstream.lift(
+                ObservableOperatorDoAfterNth(
+                    action,
+                    0
+                )
+            )
+        }
     }
 
 }

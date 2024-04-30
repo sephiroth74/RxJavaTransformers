@@ -44,8 +44,9 @@ import it.sephiroth.android.rxjava3.extensions.observable.autoSubscribe
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSubscriber
 import it.sephiroth.android.rxjava3.extensions.operators.FlowableMapNotNull
+import it.sephiroth.android.rxjava3.extensions.operators.FlowableTransformers
 import it.sephiroth.android.rxjava3.extensions.single.firstInList
-import java.util.*
+import java.util.Objects
 import java.util.concurrent.TimeUnit
 import java.util.function.Predicate
 
@@ -75,25 +76,25 @@ fun <T> Flowable<T>.autoSubscribe(builder: (AutoDisposableSubscriber<T>.() -> Un
 @SuppressLint("LogNotTimber")
 fun <T> Flowable<T>.debug(tag: String): Flowable<T> where T : Any {
     return this
-            .doOnNext { Log.v(tag, "onNext($it)") }
-            .doOnError { Log.e(tag, "onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "onSubscribe()") }
-            .doOnComplete { Log.v(tag, "onComplete()") }
-            .doOnCancel { Log.w(tag, "onCancel()") }
-            .doOnRequest { Log.w(tag, "onRequest()") }
-            .doOnTerminate { Log.w(tag, "onTerminate()") }
+        .doOnNext { Log.v(tag, "onNext($it)") }
+        .doOnError { Log.e(tag, "onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "onSubscribe()") }
+        .doOnComplete { Log.v(tag, "onComplete()") }
+        .doOnCancel { Log.w(tag, "onCancel()") }
+        .doOnRequest { Log.w(tag, "onRequest()") }
+        .doOnTerminate { Log.w(tag, "onTerminate()") }
 }
 
 @SuppressLint("LogNotTimber")
 fun <T> Flowable<T>.debugWithThread(tag: String): Flowable<T> where T : Any {
     return this
-            .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
-            .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
-            .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
-            .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
-            .doOnCancel { Log.w(tag, "[${Thread.currentThread().name}] onCancel()") }
-            .doOnRequest { Log.w(tag, "[${Thread.currentThread().name}] onRequest()") }
-            .doOnTerminate { Log.w(tag, "[${Thread.currentThread().name}] onTerminate()") }
+        .doOnNext { Log.v(tag, "[${Thread.currentThread().name}] onNext($it)") }
+        .doOnError { Log.e(tag, "[${Thread.currentThread().name}] onError(${it.message})") }
+        .doOnSubscribe { Log.v(tag, "[${Thread.currentThread().name}] onSubscribe()") }
+        .doOnComplete { Log.v(tag, "[${Thread.currentThread().name}] onComplete()") }
+        .doOnCancel { Log.w(tag, "[${Thread.currentThread().name}] onCancel()") }
+        .doOnRequest { Log.w(tag, "[${Thread.currentThread().name}] onRequest()") }
+        .doOnTerminate { Log.w(tag, "[${Thread.currentThread().name}] onTerminate()") }
 }
 
 /**
@@ -113,9 +114,9 @@ fun <T> Flowable<T>.observeMain(): Flowable<T> where T : Any {
  *
  */
 fun <T : Any> Flowable<T>.skipBetween(
-        time: Long,
-        unit: TimeUnit,
-        defaultOpened: Boolean
+    time: Long,
+    unit: TimeUnit,
+    defaultOpened: Boolean
 ): Flowable<T> {
     var t: Long = if (defaultOpened) 0 else System.currentTimeMillis()
     return this.filter {
@@ -161,7 +162,10 @@ fun <T : Any> Flowable<T>.skipBetween(
  *      FlowableTest: onNext = TestEventImpl2
  *      FlowableTest: onNext = TestEventImpl4
  */
-fun <T, E, R> Flowable<T>.pingPong(cls1: Class<E>, cls2: Class<R>): Flowable<T> where E : T, R : T, T : Any {
+fun <T, E, R> Flowable<T>.pingPong(
+    cls1: Class<E>,
+    cls2: Class<R>
+): Flowable<T> where E : T, R : T, T : Any {
     var current: Class<*>? = null
     return this.doOnSubscribe {
         current = null
@@ -260,7 +264,10 @@ fun <T : Any> Flowable<List<T>>.firstInList(predicate: Predicate<T>): Maybe<T> {
  * @throws [RetryException] when the total number of attempts have been reached
  * @since 3.0.6
  */
-fun <T> Flowable<T>.retryWhen(maxAttempts: Int, predicate: BiFunction<Throwable, Int, Long>): Flowable<T> where T : Any {
+fun <T> Flowable<T>.retryWhen(
+    maxAttempts: Int,
+    predicate: BiFunction<Throwable, Int, Long>
+): Flowable<T> where T : Any {
     return this.retryWhen { flowable ->
         flowable.zipWith(Flowable.range(1, maxAttempts + 1)) { throwable, retryCount ->
             if (retryCount > maxAttempts) {
@@ -273,3 +280,9 @@ fun <T> Flowable<T>.retryWhen(maxAttempts: Int, predicate: BiFunction<Throwable,
         }
     }
 }
+
+fun <T : Any> Flowable<T>.doOnFirst(action: (T) -> Unit): Flowable<T> =
+    compose(FlowableTransformers.doOnFirst { action.invoke(it) })
+
+fun <T : Any> Flowable<T>.doAfterFirst(action: (T) -> Unit): Flowable<T> =
+    compose(FlowableTransformers.doAfterFirst { action.invoke(it) })

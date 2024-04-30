@@ -5,11 +5,16 @@ import androidx.test.filters.LargeTest
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import it.sephiroth.android.rxjava3.extensions.completable.delay
 import it.sephiroth.android.rxjava3.extensions.flowable.*
+import it.sephiroth.android.rxjava3.extensions.observable.doAfterFirst
+import it.sephiroth.android.rxjava3.extensions.observable.doOnFirst
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSubscriber
+import it.sephiroth.android.rxjava3.extensions.operators.FlowableTransformers
+import it.sephiroth.android.rxjava3.extensions.operators.ObservableTransformers
 import org.junit.Assert
 import org.junit.BeforeClass
 import org.junit.Test
@@ -428,6 +433,91 @@ class FlowableAndroidTest {
             .test()
             .await()
             .assertError(RetryException::class.java)
+    }
+
+
+    @Test
+    fun test018() {
+        val now = System.currentTimeMillis()
+        val finalTime = AtomicLong()
+
+        val first = AtomicLong()
+        val afterFirst = AtomicLong()
+        val afterSecond = AtomicLong()
+        val second = AtomicLong()
+        val fifth = AtomicLong()
+        val fourth = AtomicLong()
+        val nextCount = AtomicLong()
+
+        Flowable.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+            .compose(FlowableTransformers.doOnFirst {
+                first.incrementAndGet()
+            })
+            .compose(FlowableTransformers.doAfterFirst {
+                afterFirst.incrementAndGet()
+            })
+            .compose(FlowableTransformers.doOnNth(2) {
+                second.incrementAndGet()
+            })
+            .compose(FlowableTransformers.doOnNth(5) {
+                fifth.incrementAndGet()
+            })
+            .compose(FlowableTransformers.doOnNth(4) {
+                fourth.incrementAndGet()
+            })
+            .compose(FlowableTransformers.doAfterNth(2) {
+                afterSecond.incrementAndGet()
+            })
+            .doOnNext {
+                nextCount.incrementAndGet()
+            }.doOnComplete {
+                finalTime.set(System.currentTimeMillis() - now)
+            }.doOnError {
+                finalTime.set(System.currentTimeMillis() - now)
+            }
+            .test()
+            .await()
+            .assertComplete()
+
+        Assert.assertEquals(10, nextCount.get())
+        Assert.assertEquals(1, first.get())
+        Assert.assertEquals(9, afterFirst.get())
+        Assert.assertEquals(1, second.get())
+        Assert.assertEquals(1, fifth.get())
+        Assert.assertEquals(1, fourth.get())
+        Assert.assertEquals(7, afterSecond.get())
+    }
+
+    @Test
+    fun test019() {
+        val now = System.currentTimeMillis()
+        val finalTime = AtomicLong()
+
+        val first = AtomicLong()
+        val afterFirst = AtomicLong()
+        val nextCount = AtomicLong()
+
+        Flowable.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+            .doOnFirst {
+                first.incrementAndGet()
+            }
+            .doAfterFirst {
+                afterFirst.incrementAndGet()
+            }
+            .doOnNext {
+                nextCount.incrementAndGet()
+            }.doOnComplete {
+                finalTime.set(System.currentTimeMillis() - now)
+            }.doOnError {
+                finalTime.set(System.currentTimeMillis() - now)
+            }
+            .test()
+            .await()
+            .assertComplete()
+
+        Assert.assertEquals(10, nextCount.get())
+        Assert.assertEquals(1, first.get())
+        Assert.assertEquals(9, afterFirst.get())
     }
 
     companion object {

@@ -29,9 +29,10 @@ import io.reactivex.rxjava3.annotations.BackpressureSupport
 import io.reactivex.rxjava3.annotations.SchedulerSupport
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.FlowableTransformer
+import io.reactivex.rxjava3.functions.Function
 import io.reactivex.rxjava3.internal.functions.ObjectHelper
 import org.reactivestreams.Publisher
-import java.util.*
+import java.util.Objects
 
 
 /**
@@ -69,15 +70,75 @@ object FlowableTransformers {
 
     @SchedulerSupport(SchedulerSupport.NONE)
     @BackpressureSupport(BackpressureKind.PASS_THROUGH)
-    fun <T> valveLast(other: Publisher<Boolean>, defaultOpen: Boolean): FlowableTransformer<T, T> where T : Any {
+    fun <T> valveLast(
+        other: Publisher<Boolean>,
+        defaultOpen: Boolean
+    ): FlowableTransformer<T, T> where T : Any {
         return valveLast(other, defaultOpen, Flowable.bufferSize())
     }
 
     @SchedulerSupport(SchedulerSupport.NONE)
     @BackpressureSupport(BackpressureKind.PASS_THROUGH)
-    fun <T> valveLast(other: Publisher<Boolean>, defaultOpen: Boolean, bufferSize: Int): FlowableTransformer<T, T> where T : Any {
+    fun <T> valveLast(
+        other: Publisher<Boolean>,
+        defaultOpen: Boolean,
+        bufferSize: Int
+    ): FlowableTransformer<T, T> where T : Any {
         Objects.requireNonNull(other, "other is null")
         ObjectHelper.verifyPositive(bufferSize, "bufferSize")
         return FlowableLastValve(null, other, defaultOpen, bufferSize)
+    }
+
+
+    @SchedulerSupport(SchedulerSupport.NONE)
+    fun <T : Any> doOnNth(nth: Long, action: Function<T, Unit>): FlowableTransformer<T, T> {
+        return FlowableTransformer { upstream ->
+            upstream.lift(
+                FlowableOperatorDoOnNth(
+                    action,
+                    nth
+                )
+            )
+        }
+    }
+
+    @SchedulerSupport(SchedulerSupport.NONE)
+    fun <T : Any> doAfterNth(
+        nth: Long,
+        action: Function<T, Unit>
+    ): FlowableTransformer<T, T> {
+        return FlowableTransformer { upstream ->
+            upstream.lift(
+                FlowableOperatorDoAfterNth(
+                    action,
+                    nth
+                )
+            )
+        }
+    }
+
+
+    @BackpressureSupport(BackpressureKind.PASS_THROUGH)
+    fun <T : Any> doOnFirst(action: Function<T, Unit>): FlowableTransformer<T, T> {
+        return FlowableTransformer { upstream ->
+            upstream.lift(
+                FlowableOperatorDoOnNth(
+                    action,
+                    0
+                )
+            )
+        }
+    }
+
+    @BackpressureSupport(BackpressureKind.PASS_THROUGH)
+    fun <T : Any> doAfterFirst(action: Function<T, Unit>): FlowableTransformer<T, T> {
+        return FlowableTransformer { upstream ->
+            upstream.lift(
+                FlowableOperatorDoAfterNth(
+                    action,
+                    0
+                )
+            )
+        }
     }
 }

@@ -4,12 +4,17 @@ import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.core.ObservableOperator
+import io.reactivex.rxjava3.core.ObservableSource
+import io.reactivex.rxjava3.core.ObservableTransformer
+import io.reactivex.rxjava3.core.Observer
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import io.reactivex.rxjava3.subjects.PublishSubject
 import it.sephiroth.android.rxjava3.extensions.completable.delay
 import it.sephiroth.android.rxjava3.extensions.observable.*
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
+import it.sephiroth.android.rxjava3.extensions.operators.ObservableTransformers
 import org.junit.Assert
 import org.junit.BeforeClass
 import org.junit.Test
@@ -589,6 +594,90 @@ class ObservableAndroidTest {
             .test()
             .await()
             .assertError(RetryException::class.java)
+    }
+
+    @Test
+    fun test021() {
+        val now = System.currentTimeMillis()
+        val finalTime = AtomicLong()
+
+        val first = AtomicLong()
+        val afterFirst = AtomicLong()
+        val afterSecond = AtomicLong()
+        val second = AtomicLong()
+        val fifth = AtomicLong()
+        val fourth = AtomicLong()
+        val nextCount = AtomicLong()
+
+        Observable.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+            .compose(ObservableTransformers.doOnFirst {
+                first.incrementAndGet()
+            })
+            .compose(ObservableTransformers.doAfterFirst {
+                afterFirst.incrementAndGet()
+            })
+            .compose(ObservableTransformers.doOnNth(2) {
+                second.incrementAndGet()
+            })
+            .compose(ObservableTransformers.doOnNth(5) {
+                fifth.incrementAndGet()
+            })
+            .compose(ObservableTransformers.doOnNth(4) {
+                fourth.incrementAndGet()
+            })
+            .compose(ObservableTransformers.doAfterNth(2) {
+                afterSecond.incrementAndGet()
+            })
+            .doOnNext {
+                nextCount.incrementAndGet()
+            }.doOnComplete {
+                finalTime.set(System.currentTimeMillis() - now)
+            }.doOnError {
+                finalTime.set(System.currentTimeMillis() - now)
+            }
+            .test()
+            .await()
+            .assertComplete()
+
+        Assert.assertEquals(10, nextCount.get())
+        Assert.assertEquals(1, first.get())
+        Assert.assertEquals(9, afterFirst.get())
+        Assert.assertEquals(1, second.get())
+        Assert.assertEquals(1, fifth.get())
+        Assert.assertEquals(1, fourth.get())
+        Assert.assertEquals(7, afterSecond.get())
+    }
+
+    @Test
+    fun test022() {
+        val now = System.currentTimeMillis()
+        val finalTime = AtomicLong()
+
+        val first = AtomicLong()
+        val afterFirst = AtomicLong()
+        val nextCount = AtomicLong()
+
+        Observable.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+            .doOnFirst {
+                first.incrementAndGet()
+            }
+            .doAfterFirst {
+                afterFirst.incrementAndGet()
+            }
+            .doOnNext {
+                nextCount.incrementAndGet()
+            }.doOnComplete {
+                finalTime.set(System.currentTimeMillis() - now)
+            }.doOnError {
+                finalTime.set(System.currentTimeMillis() - now)
+            }
+            .test()
+            .await()
+            .assertComplete()
+
+        Assert.assertEquals(10, nextCount.get())
+        Assert.assertEquals(1, first.get())
+        Assert.assertEquals(9, afterFirst.get())
     }
 
     companion object {
