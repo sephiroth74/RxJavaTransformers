@@ -24,7 +24,6 @@
 
 package it.sephiroth.android.rxjava3.extensions.observers
 
-
 /**
  * Auto Disposable Observer.
  * Upon completion, or error, will automatically unsubscribe from the

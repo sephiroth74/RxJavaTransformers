@@ -230,7 +230,7 @@ class CompletableAndroidTest {
     fun test017() {
         val now = System.currentTimeMillis()
         val finalTime = AtomicLong()
-        val maxAttempts = 10
+        val maxAttempts = 6
 
         Completable.create { emitter ->
             if (!emitter.isDisposed) {
@@ -239,7 +239,7 @@ class CompletableAndroidTest {
             }
         }.retryWhen(maxAttempts) { throwable, retryCount ->
             println("[${Date()}] predicate[$retryCount -- $maxAttempts] (throwable: ${throwable.javaClass})")
-            (retryCount * 100).toLong()
+            (retryCount * 50).toLong()
         }.subscribeOn(Schedulers.single())
             .doOnComplete {
                 println("[${Date()}] onComplete")

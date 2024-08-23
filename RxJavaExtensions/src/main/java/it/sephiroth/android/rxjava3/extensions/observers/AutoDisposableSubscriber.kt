@@ -24,7 +24,6 @@
 
 package it.sephiroth.android.rxjava3.extensions.observers
 
-
 /**
  * Auto Disposable Observer.
  * Upon completion, or error, will automatically unsubscribe from the
@@ -69,7 +68,6 @@ open class AutoDisposableSubscriber<T>() : DisposableSubscriber<T>() where T : A
     }
 
     override fun onDispose() {
-        println("onDispose")
         _doOnDispose?.invoke()
         clear()
     }
@@ -99,7 +97,6 @@ open class AutoDisposableSubscriber<T>() : DisposableSubscriber<T>() where T : A
     }
 
     private fun clear() {
-        println("clear")
         _doOnNext = null
         _doOnStart = null
         _doOnComplete = null

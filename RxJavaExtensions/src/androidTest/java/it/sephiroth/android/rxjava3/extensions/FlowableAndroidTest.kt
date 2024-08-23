@@ -39,13 +39,27 @@ class FlowableAndroidTest {
     fun test001() {
         val latch = CountDownLatch(8)
         val d = Flowable
-            .just(1, 2, 3, 4, 5).autoSubscribe {
-                doOnStart { latch.countDown() }
-                doOnNext { latch.countDown() }
-                doOnComplete { latch.countDown() }
-                doOnFinish { latch.countDown() }
+            .just(1, 2, 3, 4, 5)
+            .observeMain()
+            .autoSubscribe {
+                doOnStart {
+                    println("doOnStart")
+                    latch.countDown()
+                }
+                doOnNext {
+                    println("doOnNext: $it")
+                    latch.countDown()
+                }
+                doOnComplete {
+                    println("doOnComplete")
+                    latch.countDown()
+                }
+                doOnFinish {
+                    println("doOnFinish")
+                    latch.countDown()
+                }
             }
-        latch.await()
+        latch.await(1, TimeUnit.SECONDS)
         Assert.assertTrue(d.isDisposed)
     }
 

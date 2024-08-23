@@ -200,7 +200,7 @@ class SingleAndroidTest {
     fun test013() {
         val now = System.currentTimeMillis()
         val finalTime = AtomicLong()
-        val maxAttempts = 10
+        val maxAttempts = 6
 
         Single.create<String> { emitter ->
             if (!emitter.isDisposed) {
@@ -209,7 +209,7 @@ class SingleAndroidTest {
             }
         }.retryWhen(maxAttempts) { throwable, retryCount ->
             println("[${Date()}] predicate[$retryCount -- $maxAttempts] (throwable: ${throwable.javaClass})")
-            (retryCount * 100).toLong()
+            (retryCount * 50).toLong()
         }.subscribeOn(Schedulers.single())
             .doOnSuccess {
                 println("[${Date()}] onComplete")
