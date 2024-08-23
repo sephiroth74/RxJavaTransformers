@@ -24,7 +24,9 @@
 
 package it.sephiroth.android.rxjava3.extensions.observers
 
-import io.reactivex.rxjava3.observers.DisposableSingleObserver
+import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.internal.disposables.DisposableHelper
+import io.reactivex.rxjava3.internal.util.EndConsumerHelper
 
 /**
  * Auto disposable single observer.
@@ -32,6 +34,7 @@ import io.reactivex.rxjava3.observers.DisposableSingleObserver
  * upstream
  *
  * @author Alessandro Crugnola on 06.01.21 - 13:25
+ * #see DisposableSingleObserver
  */
 
 @Suppress("unused")
@@ -41,26 +44,49 @@ class AutoDisposableSingleObserver<T : Any>() : DisposableSingleObserver<T>() {
     private var _doOnError: ((Throwable) -> Unit)? = null
     private var _doOnStart: (() -> Unit)? = null
     private var _doOnFinish: (() -> Unit)? = null
+    private var _doOnDispose: (() -> Unit)? = null
 
     constructor(builder: (AutoDisposableSingleObserver<T>.() -> Unit)) : this() {
         this.builder()
     }
 
+    override fun onSubscribe(d: Disposable) {
+        if (EndConsumerHelper.setOnce(this.upstream, d, javaClass)) {
+            onStart()
+        }
+    }
+
+    override fun isDisposed(): Boolean {
+        return upstream.get() === DisposableHelper.DISPOSED
+    }
+
     override fun onSuccess(t: T) {
-        dispose()
         _doOnSuccess?.invoke(t)
         _doOnFinish?.invoke()
+        dispose()
     }
 
     override fun onError(e: Throwable) {
-        dispose()
         _doOnError?.invoke(e)
         _doOnFinish?.invoke()
+        dispose()
     }
 
     override fun onStart() {
-        super.onStart()
         _doOnStart?.invoke()
+    }
+
+    override fun onDispose() {
+        _doOnDispose?.invoke()
+        clear()
+    }
+
+    private fun clear() {
+        _doOnError = null
+        _doOnSuccess = null
+        _doOnStart = null
+        _doOnFinish = null
+        _doOnDispose = null
     }
 
     fun doOnSuccess(t: ((T) -> Unit)) {
@@ -77,5 +103,9 @@ class AutoDisposableSingleObserver<T : Any>() : DisposableSingleObserver<T>() {
 
     fun doOnFinish(t: (() -> Unit)) {
         _doOnFinish = t
+    }
+
+    fun doOnDispose(t: (() -> Unit)) {
+        _doOnDispose = t
     }
 }

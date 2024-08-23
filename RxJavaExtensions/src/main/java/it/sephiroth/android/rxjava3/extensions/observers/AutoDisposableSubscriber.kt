@@ -24,7 +24,6 @@
 
 package it.sephiroth.android.rxjava3.extensions.observers
 
-import io.reactivex.rxjava3.subscribers.DisposableSubscriber
 
 /**
  * Auto Disposable Observer.
@@ -34,13 +33,14 @@ import io.reactivex.rxjava3.subscribers.DisposableSubscriber
  * @author Alessandro Crugnola on 06.01.21 - 13:21
  */
 @Suppress("unused")
-open class AutoDisposableSubscriber<T>() : DisposableSubscriber<T>() {
+open class AutoDisposableSubscriber<T>() : DisposableSubscriber<T>() where T : Any {
 
     private var _doOnNext: ((T) -> Unit)? = null
     private var _doOnStart: (() -> Unit)? = null
     private var _doOnComplete: (() -> Unit)? = null
     private var _doOnError: ((Throwable) -> Unit)? = null
     private var _doOnFinish: (() -> Unit)? = null
+    private var _doOnDispose: (() -> Unit)? = null
 
     @Suppress("unused")
     constructor(builder: (AutoDisposableSubscriber<T>.() -> Unit)) : this() {
@@ -52,9 +52,9 @@ open class AutoDisposableSubscriber<T>() : DisposableSubscriber<T>() {
     }
 
     override fun onComplete() {
-        dispose()
         _doOnComplete?.invoke()
         _doOnFinish?.invoke()
+        dispose()
     }
 
     override fun onStart() {
@@ -63,9 +63,15 @@ open class AutoDisposableSubscriber<T>() : DisposableSubscriber<T>() {
     }
 
     override fun onError(e: Throwable) {
-        dispose()
         _doOnError?.invoke(e)
         _doOnFinish?.invoke()
+        dispose()
+    }
+
+    override fun onDispose() {
+        println("onDispose")
+        _doOnDispose?.invoke()
+        clear()
     }
 
     fun doOnStart(t: (() -> Unit)) {
@@ -86,5 +92,19 @@ open class AutoDisposableSubscriber<T>() : DisposableSubscriber<T>() {
 
     fun doOnFinish(t: (() -> Unit)) {
         _doOnFinish = t
+    }
+
+    fun doOnDispose(t: (() -> Unit)) {
+        _doOnDispose = t
+    }
+
+    private fun clear() {
+        println("clear")
+        _doOnNext = null
+        _doOnStart = null
+        _doOnComplete = null
+        _doOnError = null
+        _doOnFinish = null
+        _doOnDispose = null
     }
 }

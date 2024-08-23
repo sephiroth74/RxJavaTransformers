@@ -6,13 +6,18 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.schedulers.Schedulers
-import it.sephiroth.android.rxjava3.extensions.completable.*
+import it.sephiroth.android.rxjava3.extensions.completable.autoSubscribe
+import it.sephiroth.android.rxjava3.extensions.completable.debug
+import it.sephiroth.android.rxjava3.extensions.completable.debugWithThread
+import it.sephiroth.android.rxjava3.extensions.completable.delay
+import it.sephiroth.android.rxjava3.extensions.completable.observeMain
+import it.sephiroth.android.rxjava3.extensions.completable.retryWhen
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableCompletableObserver
 import org.junit.Assert
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.*
+import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
@@ -141,11 +146,12 @@ class CompletableAndroidTest {
     fun test008() {
         val result = mutableListOf<String>()
         val latch = CountDownLatch(1)
-        Completable.error(RuntimeException("test exception")).autoSubscribe(AutoDisposableCompletableObserver {
-            doOnStart { result.add("start") }
-            doOnComplete { result.add("complete") }
-            doOnError { result.add("error"); latch.countDown() }
-        })
+        Completable.error(RuntimeException("test exception"))
+            .autoSubscribe(AutoDisposableCompletableObserver {
+                doOnStart { result.add("start") }
+                doOnComplete { result.add("complete") }
+                doOnError { result.add("error"); latch.countDown() }
+            })
 
         latch.await()
         Assert.assertEquals(listOf("start", "error"), result)
@@ -154,8 +160,10 @@ class CompletableAndroidTest {
 
     @Test
     fun test009() {
-        Completable.complete().debug("c1").debugWithThread("c1-tread").test().await().assertComplete()
-        Completable.error(RuntimeException("test")).debug("c2").debugWithThread("c2-tread").test().await().assertError(RuntimeException::class.java)
+        Completable.complete().debug("c1").debugWithThread("c1-tread").test().await()
+            .assertComplete()
+        Completable.error(RuntimeException("test")).debug("c2").debugWithThread("c2-tread").test()
+            .await().assertError(RuntimeException::class.java)
 
         val latch = CountDownLatch(1)
         val result = CountDownLatch(1)
@@ -207,8 +215,14 @@ class CompletableAndroidTest {
             .await()
             .assertComplete()
 
-        Assert.assertTrue("final time must be >= ${maxAttempts / 2} seconds but it was ${finalTime.get()}", finalTime.get() >= TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2))
-        Assert.assertTrue("final time must be < ${(maxAttempts / 2) + 1} seconds but it was ${finalTime.get()}", finalTime.get() < TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2 + 1))
+        Assert.assertTrue(
+            "final time must be >= ${maxAttempts / 2} seconds but it was ${finalTime.get()}",
+            finalTime.get() >= TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2)
+        )
+        Assert.assertTrue(
+            "final time must be < ${(maxAttempts / 2) + 1} seconds but it was ${finalTime.get()}",
+            finalTime.get() < TimeUnit.SECONDS.toMillis(maxAttempts.toLong() / 2 + 1)
+        )
     }
 
 
@@ -262,6 +276,32 @@ class CompletableAndroidTest {
         }
 
         latch.await()
+    }
+
+    @Test
+    fun test019() {
+        val latch = CountDownLatch(1)
+        var disposable: AutoDisposableCompletableObserver? =
+            Completable.complete().delay(100, TimeUnit.MILLISECONDS)
+                .subscribeOn(Schedulers.single())
+                .autoSubscribe {
+                    doOnStart { println("doOnStart") }
+
+                    doOnComplete {
+                        println("doOnComplete")
+                        latch.countDown()
+                    }
+
+                    doOnError { println("doOnError") }
+
+                    doOnDispose { println("doOnDispose") }
+                }
+
+        latch.await(1, TimeUnit.SECONDS)
+        Assert.assertEquals(0, latch.count)
+        System.gc()
+        disposable = null
+        println("done")
     }
 
     companion object {

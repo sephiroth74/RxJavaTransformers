@@ -4,22 +4,35 @@ import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.core.ObservableOperator
-import io.reactivex.rxjava3.core.ObservableSource
-import io.reactivex.rxjava3.core.ObservableTransformer
-import io.reactivex.rxjava3.core.Observer
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import io.reactivex.rxjava3.subjects.PublishSubject
 import it.sephiroth.android.rxjava3.extensions.completable.delay
-import it.sephiroth.android.rxjava3.extensions.observable.*
+import it.sephiroth.android.rxjava3.extensions.observable.ObservableUtils
+import it.sephiroth.android.rxjava3.extensions.observable.autoRefresh
+import it.sephiroth.android.rxjava3.extensions.observable.autoSubscribe
+import it.sephiroth.android.rxjava3.extensions.observable.debug
+import it.sephiroth.android.rxjava3.extensions.observable.debugWithThread
+import it.sephiroth.android.rxjava3.extensions.observable.doAfterFirst
+import it.sephiroth.android.rxjava3.extensions.observable.doAfterNth
+import it.sephiroth.android.rxjava3.extensions.observable.doOnFirst
+import it.sephiroth.android.rxjava3.extensions.observable.doOnNth
+import it.sephiroth.android.rxjava3.extensions.observable.firstInList
+import it.sephiroth.android.rxjava3.extensions.observable.mapList
+import it.sephiroth.android.rxjava3.extensions.observable.mapNotNull
+import it.sephiroth.android.rxjava3.extensions.observable.muteUntil
+import it.sephiroth.android.rxjava3.extensions.observable.observeMain
+import it.sephiroth.android.rxjava3.extensions.observable.refreshEvery
+import it.sephiroth.android.rxjava3.extensions.observable.retry
+import it.sephiroth.android.rxjava3.extensions.observable.retryWhen
+import it.sephiroth.android.rxjava3.extensions.observable.toSingle
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableObserver
 import it.sephiroth.android.rxjava3.extensions.operators.ObservableTransformers
 import org.junit.Assert
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.*
+import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
@@ -720,6 +733,43 @@ class ObservableAndroidTest {
         Assert.assertEquals(2, afterFirst.get())
         Assert.assertEquals(1, afterSecond.get())
         Assert.assertEquals(0, fifth.get())
+    }
+
+    @Test
+    fun test024() {
+        val latch = CountDownLatch(1)
+        val disposable = Observable.just(1, 2, 3, 4, 5)
+            .observeMain()
+            .autoSubscribe {
+                doOnComplete {
+                    println("onComplete")
+                    latch.countDown()
+                }
+
+                doOnStart {
+                    println("onStart")
+                }
+
+                doOnFinish {
+                    println("onFinish")
+                }
+
+                doOnNext {
+                    println("onNext: $it")
+                }
+
+                doOnDispose {
+                    println("onDispose")
+                }
+
+                doOnError {
+                    println("onError: $it")
+                }
+            }
+
+        latch.await()
+        disposable.dispose()
+        Assert.assertTrue(disposable.isDisposed)
     }
 
     companion object {

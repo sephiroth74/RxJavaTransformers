@@ -3,14 +3,22 @@ package it.sephiroth.android.rxjava3.extensions
 import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import it.sephiroth.android.rxjava3.extensions.observers.AutoDisposableSingleObserver
-import it.sephiroth.android.rxjava3.extensions.single.*
+import it.sephiroth.android.rxjava3.extensions.single.asObservable
+import it.sephiroth.android.rxjava3.extensions.single.autoSubscribe
+import it.sephiroth.android.rxjava3.extensions.single.debug
+import it.sephiroth.android.rxjava3.extensions.single.debugWithThread
+import it.sephiroth.android.rxjava3.extensions.single.firstInList
+import it.sephiroth.android.rxjava3.extensions.single.mapList
+import it.sephiroth.android.rxjava3.extensions.single.observeMain
+import it.sephiroth.android.rxjava3.extensions.single.retryWhen
 import org.junit.Assert
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.*
+import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
@@ -215,12 +223,53 @@ class SingleAndroidTest {
             .assertError(RetryException::class.java)
     }
 
+    @Test
+    fun test014() {
+        val latch = CountDownLatch(1)
+        var disposable: Disposable? = Disposable.disposed()
+        disposable = Single.create<Int> { emitter ->
+            Thread.sleep(100)
+            println("ok, now emitting")
+            println("emitter is disposed? ${emitter.isDisposed}")
+            emitter.onSuccess(1)
+        }.subscribeOn(Schedulers.single())
+            .observeMain()
+            .autoSubscribe {
+                doOnStart {
+                    println("doOnStart")
+                }
+
+                doOnSuccess {
+                    println("doOnSuccess")
+                    latch.countDown()
+                }
+
+                doOnError {
+                    println("doOnError")
+                }
+
+                doOnFinish {
+                    println("doOnFinish")
+                }
+
+                doOnDispose {
+                    println("doOnDispose")
+                }
+            }
+
+        latch.await(1, TimeUnit.SECONDS)
+        Assert.assertEquals(0, latch.count)
+        System.gc()
+        disposable = null
+    }
+
 
     companion object {
         private lateinit var ioThread: Thread
         private lateinit var singleThread: Thread
 
         @BeforeClass
+        @JvmStatic
         fun before() {
             val latch = CountDownLatch(2)
 
