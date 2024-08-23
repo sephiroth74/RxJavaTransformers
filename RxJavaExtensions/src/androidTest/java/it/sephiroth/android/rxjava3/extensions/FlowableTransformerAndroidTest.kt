@@ -16,11 +16,16 @@ import io.reactivex.rxjava3.observers.LambdaConsumerIntrospection
 import io.reactivex.rxjava3.plugins.RxJavaPlugins
 import io.reactivex.rxjava3.processors.PublishProcessor
 import io.reactivex.rxjava3.schedulers.Schedulers
+import it.sephiroth.android.rxjava3.extensions.flowable.autoSubscribe
+import it.sephiroth.android.rxjava3.extensions.flowable.observeMain
 import it.sephiroth.android.rxjava3.extensions.operators.FlowableTransformers
+import org.junit.Assert
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -93,7 +98,86 @@ class FlowableTransformerAndroidTest {
     fun test02() {
         val o1 = Flowable.just(1, 2, 3, 4, 5)
         val o2 = PublishProcessor.create<Boolean>()
-        o1.compose(FlowableTransformers.valveLast(o2)).test().await().assertComplete().assertValues(1, 2, 3, 4, 5)
+        o1.compose(FlowableTransformers.valveLast(o2)).test().await().assertComplete()
+            .assertValues(1, 2, 3, 4, 5)
+    }
+
+    @Test
+    fun test03() {
+        var i = 0
+        val latch = CountDownLatch(14)
+        val disposable = Flowable.create<Int>({ emitter ->
+            while (i < 10) {
+                if (emitter.isCancelled) return@create
+                emitter.onNext(i)
+                i++
+                try {
+                    Thread.sleep(100)
+                } catch (e: InterruptedException) {
+                    if (!emitter.isCancelled) emitter.onError(e)
+                    return@create
+                }
+            }
+            emitter.onComplete()
+        }, BackpressureStrategy.BUFFER)
+            .subscribeOn(Schedulers.single())
+            .observeMain()
+            .autoSubscribe {
+                doOnStart {
+                    println("doOnStart")
+                    latch.countDown()
+                }
+                doOnDispose {
+                    println("doOnDispose")
+                    latch.countDown()
+                }
+                doOnError {
+                    println("doOnError")
+                }
+                doOnFinish {
+                    println("doOnFinish")
+                    latch.countDown()
+                }
+                doOnComplete {
+                    println("doOnComplete")
+                    latch.countDown()
+                }
+                doOnNext {
+                    println("doOnNext($it)")
+                    latch.countDown()
+                }
+            }
+
+        println("now waiting...")
+        latch.await(5, TimeUnit.SECONDS)
+        Thread.sleep(1000)
+
+        Assert.assertTrue(disposable.isDisposed)
+
+        println("done")
+    }
+
+    companion object {
+        private lateinit var ioThread: Thread
+        private lateinit var singleThread: Thread
+
+        @JvmStatic
+        @BeforeClass
+        fun before() {
+            val latch = CountDownLatch(2)
+
+            Schedulers.single().scheduleDirect {
+                singleThread = Thread.currentThread()
+                latch.countDown()
+            }
+
+            Schedulers.io().scheduleDirect {
+                ioThread = Thread.currentThread()
+                latch.countDown()
+            }
+            latch.await()
+
+        }
     }
 
     private fun <T : Event> subscribe(upstream: Flowable<T>, action: (T) -> Unit): Disposable {
@@ -116,7 +200,8 @@ class FlowableTransformerAndroidTest {
 class LambdaSubscriber<T : Any>(
     private val action: (T) -> Unit,
     private val onSubscribe: Consumer<Subscription>
-) : AtomicReference<Subscription?>(), FlowableSubscriber<T>, Subscription, Disposable, LambdaConsumerIntrospection {
+) : AtomicReference<Subscription?>(), FlowableSubscriber<T>, Subscription, Disposable,
+    LambdaConsumerIntrospection {
 
     override fun onSubscribe(s: Subscription) {
         println("LambdaSubscriber::onSubscribe(${s.javaClass}, ${System.identityHashCode(s)})")
@@ -182,7 +267,8 @@ internal class CustomOperator<T : Any> : FlowableOperator<T, T> {
     }
 }
 
-class CustomSubscriber<T : Any>(private val downstream: Subscriber<in T>) : FlowableSubscriber<T>, Subscription {
+class CustomSubscriber<T : Any>(private val downstream: Subscriber<in T>) : FlowableSubscriber<T>,
+    Subscription {
     private val tag = "CustomSubscriber[${System.identityHashCode(this)}]"
 
     private var upstream: Subscription? = null

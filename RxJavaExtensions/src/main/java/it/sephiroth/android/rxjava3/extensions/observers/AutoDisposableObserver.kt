@@ -24,7 +24,6 @@
 
 package it.sephiroth.android.rxjava3.extensions.observers
 
-import io.reactivex.rxjava3.observers.DisposableObserver
 
 /**
  * Auto Disposable Observer.
@@ -41,6 +40,7 @@ class AutoDisposableObserver<T : Any>() : DisposableObserver<T>() {
     private var _doOnComplete: (() -> Unit)? = null
     private var _doOnError: ((Throwable) -> Unit)? = null
     private var _doOnFinish: (() -> Unit)? = null
+    private var _doOnDispose: (() -> Unit)? = null
 
     @Suppress("unused")
     constructor(builder: (AutoDisposableObserver<T>.() -> Unit)) : this() {
@@ -52,20 +52,24 @@ class AutoDisposableObserver<T : Any>() : DisposableObserver<T>() {
     }
 
     override fun onComplete() {
-        dispose()
         _doOnComplete?.invoke()
         _doOnFinish?.invoke()
+        dispose()
     }
 
     override fun onStart() {
-        super.onStart()
         _doOnStart?.invoke()
     }
 
     override fun onError(e: Throwable) {
-        dispose()
         _doOnError?.invoke(e)
         _doOnFinish?.invoke()
+        dispose()
+    }
+
+    override fun onDispose() {
+        _doOnDispose?.invoke()
+        clear()
     }
 
     fun doOnStart(t: (() -> Unit)) {
@@ -86,5 +90,18 @@ class AutoDisposableObserver<T : Any>() : DisposableObserver<T>() {
 
     fun doOnFinish(t: (() -> Unit)) {
         _doOnFinish = t
+    }
+
+    fun doOnDispose(t: (() -> Unit)) {
+        _doOnDispose = t
+    }
+
+    private fun clear() {
+        _doOnNext = null
+        _doOnStart = null
+        _doOnComplete = null
+        _doOnError = null
+        _doOnFinish = null
+        _doOnDispose = null
     }
 }

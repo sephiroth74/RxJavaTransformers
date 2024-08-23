@@ -24,7 +24,6 @@
 
 package it.sephiroth.android.rxjava3.extensions.observers
 
-import io.reactivex.rxjava3.observers.DisposableMaybeObserver
 
 /**
  * Auto disposable Maybe Observer
@@ -41,32 +40,37 @@ class AutoDisposableMaybeObserver<T : Any>() : DisposableMaybeObserver<T>() {
     private var _doOnComplete: (() -> Unit)? = null
     private var _doOnFinish: (() -> Unit)? = null
     private var _doOnStart: (() -> Unit)? = null
+    private var _doOnDispose: (() -> Unit)? = null
 
     constructor(builder: (AutoDisposableMaybeObserver<T>.() -> Unit)) : this() {
         this.builder()
     }
 
     override fun onComplete() {
-        dispose()
         _doOnComplete?.invoke()
         _doOnFinish?.invoke()
+        dispose()
     }
 
     override fun onSuccess(t: T) {
-        dispose()
         _doOnSuccess?.invoke(t)
         _doOnFinish?.invoke()
+        dispose()
     }
 
     override fun onError(e: Throwable) {
-        dispose()
         _doOnError?.invoke(e)
         _doOnFinish?.invoke()
+        dispose()
     }
 
     override fun onStart() {
-        super.onStart()
         _doOnStart?.invoke()
+    }
+
+    override fun onDispose() {
+        _doOnDispose?.invoke()
+        clear()
     }
 
     fun doOnSuccess(t: ((T) -> Unit)) {
@@ -87,5 +91,18 @@ class AutoDisposableMaybeObserver<T : Any>() : DisposableMaybeObserver<T>() {
 
     fun doOnStart(t: (() -> Unit)) {
         _doOnStart = t
+    }
+
+    fun doOnDispose(t: (() -> Unit)) {
+        _doOnDispose = t
+    }
+
+    private fun clear() {
+        _doOnSuccess = null
+        _doOnError = null
+        _doOnComplete = null
+        _doOnFinish = null
+        _doOnStart = null
+        _doOnDispose = null
     }
 }
