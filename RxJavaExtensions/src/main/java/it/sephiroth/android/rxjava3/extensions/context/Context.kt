@@ -131,6 +131,7 @@ fun Context.observeBroadcast(
     broadcastPermission: String? = null,
     schedulerHandler: Handler? = null,
     receiverFlags: Int? = null,
+    registerAction: (() -> Unit)? = null,
 ): Observable<Intent> {
     return Observable.create(
         BroadcastReceiverObservableOnSubscribe(
@@ -138,7 +139,8 @@ fun Context.observeBroadcast(
             intentFilter,
             broadcastPermission,
             schedulerHandler,
-            receiverFlags
+            receiverFlags,
+            registerAction
         )
     )
 }
