@@ -28,12 +28,10 @@ class BroadcastObservableOnSubscribe(
         subject.doOnSubscribe(DoOnSubscribe()).doOnDispose(DoOnDispose())
 
     override fun subscribe(emitter: ObservableEmitter<Intent>) {
-        Log.i(TAG, "subscribe")
         topic.subscribe(EmitterObserver(emitter))
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        Log.i(TAG, "onReceive(action=${intent.action})")
         this.subject.onNext(intent)
     }
 
@@ -42,7 +40,6 @@ class BroadcastObservableOnSubscribe(
     private fun doOnDispose() = unregisterReceiver()
 
     private fun unregisterReceiver() {
-        Log.i(TAG, "unregisterReceiver")
         try {
             context.unregisterReceiver(this)
         } catch (t: Throwable) {
@@ -52,7 +49,6 @@ class BroadcastObservableOnSubscribe(
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private fun registerReceiver() {
-        Log.i(TAG, "registerReceiver")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.registerReceiver(
                 this,
