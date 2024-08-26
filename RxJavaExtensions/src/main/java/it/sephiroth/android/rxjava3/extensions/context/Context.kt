@@ -36,7 +36,7 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.ObservableEmitter
 import io.reactivex.rxjava3.disposables.Disposable
-import it.sephiroth.android.rxjava3.extensions.observers.BroadcastObservableOnSubscribe
+import it.sephiroth.android.rxjava3.extensions.core.BroadcastReceiverObservableOnSubscribe
 import it.sephiroth.android.rxjava3.extensions.observers.BroadcastReceiverObserver
 
 /**
@@ -49,12 +49,18 @@ import it.sephiroth.android.rxjava3.extensions.observers.BroadcastReceiverObserv
  * Register the current context to one or more intent actions.
  * Once an action is received, the result [Observable] will trigger a new [Intent]
  */
-@Deprecated(message = "Use observeBroadcast instead", replaceWith = ReplaceWith("observeBroadcast(intentFilter, permission, receiverFlags)"))
+@Deprecated(
+    message = "Use observeBroadcast instead",
+    replaceWith = ReplaceWith("observeBroadcast(intentFilter, permission, receiverFlags)")
+)
 fun Context.observeBroadcasts(vararg action: String): Observable<Intent> {
     return observeBroadcasts(*action, dataScheme = null, permission = null, scheduler = null)
 }
 
-@Deprecated(message = "Use observeBroadcast instead", replaceWith = ReplaceWith("observeBroadcast(intentFilter, permission, receiverFlags)"))
+@Deprecated(
+    message = "Use observeBroadcast instead",
+    replaceWith = ReplaceWith("observeBroadcast(intentFilter, permission, receiverFlags)")
+)
 fun Context.observeBroadcasts(
     vararg action: String,
     dataScheme: String? = null,
@@ -73,14 +79,16 @@ fun Context.observeBroadcasts(
 }
 
 @SuppressLint("UnspecifiedRegisterReceiverFlag")
-@Deprecated(message = "Use observeBroadcast instead", replaceWith = ReplaceWith("observeBroadcast(*intentFilter, *permission, *receiverFlags)"))
+@Deprecated(
+    message = "Use observeBroadcast instead",
+    replaceWith = ReplaceWith("observeBroadcast(*intentFilter, *permission, *receiverFlags)")
+)
 fun Context.observeBroadcasts(
     intentFilter: IntentFilter,
     permission: String? = null,
     scheduler: Handler? = null,
     receiverFlags: Int? = null,
 ): Observable<Intent> {
-    println("observeBroadcasts(intent=$intentFilter)")
     val observable = Observable.create { observer: ObservableEmitter<Intent> ->
         var receiver: BroadcastReceiverObserver? = BroadcastReceiverObserver(observer)
         observer.setDisposable(Disposable.fromRunnable {
@@ -115,16 +123,21 @@ fun Context.observeBroadcasts(
         .observeOn(AndroidSchedulers.mainThread())
 }
 
+/**
+ * Create a new [Observable] to subscribe to based on an Android broadcast
+ */
 fun Context.observeBroadcast(
     intentFilter: IntentFilter,
-    permission: String? = null,
+    broadcastPermission: String? = null,
+    schedulerHandler: Handler? = null,
     receiverFlags: Int? = null,
 ): Observable<Intent> {
     return Observable.create(
-        BroadcastObservableOnSubscribe(
+        BroadcastReceiverObservableOnSubscribe(
             this,
             intentFilter,
-            permission,
+            broadcastPermission,
+            schedulerHandler,
             receiverFlags
         )
     )
