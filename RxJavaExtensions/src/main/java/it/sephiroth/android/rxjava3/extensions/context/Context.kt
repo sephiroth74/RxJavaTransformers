@@ -115,7 +115,6 @@ fun Context.observeBroadcasts(
         .observeOn(AndroidSchedulers.mainThread())
 }
 
-
 fun Context.observeBroadcast(
     intentFilter: IntentFilter,
     permission: String? = null,

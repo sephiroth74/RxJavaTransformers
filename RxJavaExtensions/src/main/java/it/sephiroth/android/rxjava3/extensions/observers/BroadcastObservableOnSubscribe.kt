@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
-import android.util.Log
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.ObservableEmitter
 import io.reactivex.rxjava3.core.ObservableOnSubscribe
@@ -78,5 +77,4 @@ class BroadcastObservableOnSubscribe(
     companion object {
         private val TAG = BroadcastObservableOnSubscribe::class.java.simpleName
     }
-
 }
