@@ -1,5 +1,6 @@
 package it.sephiroth.android.rxjava3.extensions.core
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -19,6 +20,7 @@ internal class BroadcastReceiverObservableOnSubscribe(
     private val registerAction: (() -> Unit)? = null,
 ) : ObservableOnSubscribe<Intent> {
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun subscribe(e: ObservableEmitter<Intent>) {
         val broadcastReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
@@ -27,7 +29,7 @@ internal class BroadcastReceiverObservableOnSubscribe(
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Log.i(TAG, "registering receiver")
+            Log.v(TAG, "registering receiver")
             context.registerReceiver(
                 broadcastReceiver,
                 intentFilter,
@@ -36,7 +38,7 @@ internal class BroadcastReceiverObservableOnSubscribe(
                 receiverFlags ?: Context.RECEIVER_EXPORTED
             )
         } else {
-            Log.i(TAG, "registering receiver")
+            Log.v(TAG, "registering receiver")
             context.registerReceiver(
                 broadcastReceiver,
                 intentFilter
@@ -44,7 +46,7 @@ internal class BroadcastReceiverObservableOnSubscribe(
         }
 
         e.setCancellable {
-            Log.i(TAG, "unregistering receiver")
+            Log.v(TAG, "unregistering receiver")
             context.unregisterReceiver(broadcastReceiver)
         }
 
