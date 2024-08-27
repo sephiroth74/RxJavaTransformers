@@ -17,7 +17,7 @@ internal class BroadcastReceiverObservableOnSubscribe(
     private val broadcastPermission: String? = null,
     private val schedulerHandler: Handler? = null,
     private val receiverFlags: Int? = null,
-    private val registerAction: (() -> Unit)? = null,
+    private val onRegister: (() -> Unit)? = null,
 ) : ObservableOnSubscribe<Intent> {
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
@@ -50,7 +50,7 @@ internal class BroadcastReceiverObservableOnSubscribe(
             context.unregisterReceiver(broadcastReceiver)
         }
 
-        registerAction?.invoke()
+        onRegister?.invoke()
     }
 
     companion object {
